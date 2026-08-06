@@ -6,7 +6,7 @@ import 'package:hotel_wear_app/presentation/widgets/wear/wear_alert_card.dart';
 class WearAlertsScreen extends ConsumerWidget {
   static const String routeName = '/wear-alerts';
 
-  const WearAlertsScreen({Key? key}) : super(key: key);
+  const WearAlertsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hotel_wear_app/presentation/providers/wear/wear_repository_provider.dart';
 import 'wear_dashboard_screen.dart';
 import 'wear_alerts_screen.dart';
 import 'wear_history_screen.dart';
 
 class WearMainScreen extends ConsumerStatefulWidget {
-  const WearMainScreen({Key? key}) : super(key: key);
+  const WearMainScreen({super.key});
 
   @override
   ConsumerState<WearMainScreen> createState() => _WearMainScreenState();
@@ -20,6 +21,9 @@ class _WearMainScreenState extends ConsumerState<WearMainScreen> {
   void initState() {
     super.initState();
     _pageController = PageController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(wearCommunicationServiceProvider).initialize();
+    });
   }
 
   @override
@@ -81,7 +85,7 @@ class _WearMainScreenState extends ConsumerState<WearMainScreen> {
                       shape: BoxShape.circle,
                       color: _currentPage == i
                           ? Colors.white
-                          : Colors.white.withOpacity(0.35),
+                          : Colors.white.withValues(alpha: 0.35),
                     ),
                   );
                 }),

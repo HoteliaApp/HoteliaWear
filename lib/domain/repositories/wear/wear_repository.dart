@@ -43,6 +43,9 @@ abstract class WearRepository {
   /// Reconoce una alerta
   Future<void> acknowledgeAlert(String alertId);
 
+  /// Stream de tareas en tiempo real
+  Stream<List<WearTask>> watchTasks();
+
   /// Stream de actualizaciones en tiempo real
   Stream<Map<String, dynamic>> getRealtimeUpdates();
 }

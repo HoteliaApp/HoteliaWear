@@ -9,7 +9,7 @@ class WearConfirmationScreen extends ConsumerStatefulWidget {
 
   final WearTask task;
 
-  const WearConfirmationScreen({Key? key, required this.task}) : super(key: key);
+  const WearConfirmationScreen({super.key, required this.task});
 
   @override
   ConsumerState<WearConfirmationScreen> createState() =>

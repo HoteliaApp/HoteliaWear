@@ -2,62 +2,73 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotel_wear_app/domain/entities/wear/wear_task.dart';
 import 'package:hotel_wear_app/presentation/providers/wear/wear_repository_provider.dart';
 
-/// Provider de todas las tareas
-final wearTasksProvider = FutureProvider<List<WearTask>>((ref) async {
+/// Provider reactivo de todas las tareas (Stream en tiempo real desde Firebase)
+final wearTasksProvider = StreamProvider<List<WearTask>>((ref) {
   final repository = ref.watch(wearRepositoryProvider);
-  return repository.getTasks();
+  return repository.watchTasks();
 });
 
-/// Provider de tareas pendientes
-final wearPendingTasksProvider = FutureProvider<List<WearTask>>((ref) async {
-  final repository = ref.watch(wearRepositoryProvider);
-  return repository.getTasksByStatus(WearTaskStatus.pending);
+/// Provider reactivo de tareas pendientes
+final wearPendingTasksProvider = Provider<AsyncValue<List<WearTask>>>((ref) {
+  final tasksAsync = ref.watch(wearTasksProvider);
+  return tasksAsync.whenData(
+    (tasks) => tasks.where((t) => t.status == WearTaskStatus.pending).toList(),
+  );
 });
 
-/// Provider de tareas en progreso
-final wearInProgressTasksProvider = FutureProvider<List<WearTask>>((ref) async {
-  final repository = ref.watch(wearRepositoryProvider);
-  return repository.getTasksByStatus(WearTaskStatus.inProgress);
+/// Provider reactivo de tareas en progreso
+final wearInProgressTasksProvider = Provider<AsyncValue<List<WearTask>>>((ref) {
+  final tasksAsync = ref.watch(wearTasksProvider);
+  return tasksAsync.whenData(
+    (tasks) =>
+        tasks.where((t) => t.status == WearTaskStatus.inProgress).toList(),
+  );
 });
 
-/// Provider de tareas completadas
-final wearCompletedTasksProvider = FutureProvider<List<WearTask>>((ref) async {
-  final repository = ref.watch(wearRepositoryProvider);
-  return repository.getTasksByStatus(WearTaskStatus.completed);
+/// Provider reactivo de tareas completadas
+final wearCompletedTasksProvider = Provider<AsyncValue<List<WearTask>>>((ref) {
+  final tasksAsync = ref.watch(wearTasksProvider);
+  return tasksAsync.whenData(
+    (tasks) =>
+        tasks.where((t) => t.status == WearTaskStatus.completed).toList(),
+  );
 });
 
-/// Provider para obtener una tarea específica
-final wearTaskByIdProvider = FutureProvider.family<WearTask?, String>((ref, taskId) async {
-  final repository = ref.watch(wearRepositoryProvider);
-  return repository.getTaskById(taskId);
+/// Provider reactivo para obtener una tarea específica por ID
+final wearTaskByIdProvider =
+    Provider.family<AsyncValue<WearTask?>, String>((ref, taskId) {
+  final tasksAsync = ref.watch(wearTasksProvider);
+  return tasksAsync.whenData((tasks) {
+    final matching = tasks.where((t) => t.id == taskId).toList();
+    return matching.isNotEmpty ? matching.first : null;
+  });
 });
 
 /// Provider para manejar aceptación de tarea
-final acceptWearTaskProvider = FutureProvider.family<void, String>((ref, taskId) async {
-  final repository = ref.watch(wearRepositoryProvider);
+final acceptWearTaskProvider =
+    FutureProvider.family<void, String>((ref, taskId) async {
+  final repository = ref.read(wearRepositoryProvider);
   await repository.acceptTask(taskId);
-  // Refrescar lista de tareas
-  ref.refresh(wearTasksProvider);
 });
 
 /// Provider para iniciar tarea
-final startWearTaskProvider = FutureProvider.family<void, String>((ref, taskId) async {
-  final repository = ref.watch(wearRepositoryProvider);
+final startWearTaskProvider =
+    FutureProvider.family<void, String>((ref, taskId) async {
+  final repository = ref.read(wearRepositoryProvider);
   await repository.startTask(taskId);
-  ref.refresh(wearTasksProvider);
 });
 
 /// Provider para completar tarea
-final completeWearTaskProvider = FutureProvider.family<void, (String, String?)>((ref, params) async {
+final completeWearTaskProvider =
+    FutureProvider.family<void, (String, String?)>((ref, params) async {
   final (taskId, notes) = params;
-  final repository = ref.watch(wearRepositoryProvider);
+  final repository = ref.read(wearRepositoryProvider);
   await repository.completeTask(taskId, notes: notes);
-  ref.refresh(wearTasksProvider);
 });
 
 /// Provider para cancelar tarea
-final cancelWearTaskProvider = FutureProvider.family<void, String>((ref, taskId) async {
-  final repository = ref.watch(wearRepositoryProvider);
+final cancelWearTaskProvider =
+    FutureProvider.family<void, String>((ref, taskId) async {
+  final repository = ref.read(wearRepositoryProvider);
   await repository.cancelTask(taskId);
-  ref.refresh(wearTasksProvider);
-});
+});

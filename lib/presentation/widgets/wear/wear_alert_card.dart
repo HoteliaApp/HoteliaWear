@@ -7,10 +7,10 @@ class WearAlertCard extends StatelessWidget {
   final VoidCallback onAcknowledge;
 
   const WearAlertCard({
-    Key? key,
+    super.key,
     required this.alert,
     required this.onAcknowledge,
-  }) : super(key: key);
+  });
 
   Color get _severityColor => switch (alert.severity) {
         AlertSeverity.low => const Color(0xFF2196F3),
@@ -34,7 +34,7 @@ class WearAlertCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
-        color: _severityColor.withOpacity(0.08),
+        color: _severityColor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(10),
         border: Border(
           left: BorderSide(color: _severityColor, width: 3),

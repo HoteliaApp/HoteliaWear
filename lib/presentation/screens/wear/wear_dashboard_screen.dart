@@ -8,7 +8,7 @@ class WearDashboardScreen extends ConsumerWidget {
   static const String routeName = '/wear-dashboard';
   static const String routePath = '/wear-dashboard';
 
-  const WearDashboardScreen({Key? key}) : super(key: key);
+  const WearDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

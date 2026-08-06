@@ -5,7 +5,7 @@ import 'package:hotel_wear_app/domain/entities/wear/wear_task.dart';
 class WearHistoryItem extends StatelessWidget {
   final WearTask task;
 
-  const WearHistoryItem({Key? key, required this.task}) : super(key: key);
+  const WearHistoryItem({super.key, required this.task});
 
   Color get _statusColor => switch (task.status) {
         WearTaskStatus.completed => const Color(0xFF4CAF50),
@@ -63,7 +63,7 @@ class WearHistoryItem extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
-                  color: _statusColor.withOpacity(0.15),
+                  color: _statusColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(

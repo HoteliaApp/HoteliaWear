@@ -18,6 +18,6 @@ final wearUnacknowledgedAlertsProvider = FutureProvider<List<WearAlert>>((ref) a
 final acknowledgeWearAlertProvider = FutureProvider.family<void, String>((ref, alertId) async {
   final repository = ref.watch(wearRepositoryProvider);
   await repository.acknowledgeAlert(alertId);
-  ref.refresh(wearAlertsProvider);
-  ref.refresh(wearUnacknowledgedAlertsProvider);
+  ref.invalidate(wearAlertsProvider);
+  ref.invalidate(wearUnacknowledgedAlertsProvider);
 });

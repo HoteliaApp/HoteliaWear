@@ -10,7 +10,7 @@ class WearTaskDetailScreen extends ConsumerWidget {
 
   final String taskId;
 
-  const WearTaskDetailScreen({Key? key, required this.taskId}) : super(key: key);
+  const WearTaskDetailScreen({super.key, required this.taskId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -111,7 +111,7 @@ class _DetailBody extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: _priorityColor(task.priority).withOpacity(0.2),
+                      color: _priorityColor(task.priority).withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
                       border:
                           Border.all(color: _priorityColor(task.priority), width: 1),

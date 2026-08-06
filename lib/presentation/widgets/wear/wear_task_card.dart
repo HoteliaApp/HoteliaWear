@@ -9,11 +9,11 @@ class WearTaskCard extends StatelessWidget {
   final VoidCallback? onAccept;
 
   const WearTaskCard({
-    Key? key,
+    super.key,
     required this.task,
     required this.onTap,
     this.onAccept,
-  }) : super(key: key);
+  });
 
   Color get _statusColor => switch (task.status) {
         WearTaskStatus.pending => const Color(0xFFFF9800),
