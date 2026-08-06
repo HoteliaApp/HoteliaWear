@@ -4,6 +4,7 @@ import 'package:hotel_wear_app/domain/entities/wear/wear_notification.dart';
 import 'package:hotel_wear_app/domain/entities/wear/wear_alert.dart';
 import 'package:hotel_wear_app/domain/repositories/wear/wear_repository.dart';
 import 'package:hotel_wear_app/infrastructure/models/wear/wear_task_model.dart';
+import 'package:hotel_wear_app/infrastructure/models/wear/wear_alert_model.dart';
 
 /// Implementación de WearRepository con Firebase Firestore
 class FirebaseWearRepositoryImpl implements WearRepository {
@@ -79,12 +80,41 @@ class FirebaseWearRepositoryImpl implements WearRepository {
 
   @override
   Future<List<WearAlert>> getAlerts() async {
-    return [];
+    try {
+      final snapshot = await _firestore.collection('alerts').get();
+      return snapshot.docs
+          .map((doc) => WearAlertModel.fromJson(doc.data()).toEntity())
+          .toList();
+    } catch (e) {
+      return [];
+    }
   }
 
   @override
   Future<List<WearAlert>> getUnacknowledgedAlerts() async {
-    return [];
+    try {
+      final snapshot = await _firestore
+          .collection('alerts')
+          .where('isAcknowledged', isEqualTo: false)
+          .get();
+      return snapshot.docs
+          .map((doc) => WearAlertModel.fromJson(doc.data()).toEntity())
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  @override
+  Stream<List<WearAlert>> watchAlerts() {
+    return _firestore
+        .collection('alerts')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => WearAlertModel.fromJson(doc.data()).toEntity())
+          .toList();
+    });
   }
 
   @override
@@ -143,7 +173,14 @@ class FirebaseWearRepositoryImpl implements WearRepository {
 
   @override
   Future<void> acknowledgeAlert(String alertId) async {
-    // TODO
+    try {
+      await _firestore
+          .collection('alerts')
+          .doc(alertId)
+          .update({'isAcknowledged': true});
+    } catch (e) {
+      rethrow;
+    }
   }
 
   @override

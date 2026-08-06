@@ -25,6 +25,9 @@ abstract class WearRepository {
   /// Obtiene alertas sin reconocer
   Future<List<WearAlert>> getUnacknowledgedAlerts();
 
+  /// Stream de alertas en tiempo real
+  Stream<List<WearAlert>> watchAlerts();
+
   /// Acepta una tarea
   Future<void> acceptTask(String taskId);
 

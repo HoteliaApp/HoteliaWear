@@ -94,4 +94,9 @@ class WearRepositoryImpl implements WearRepository {
   Stream<Map<String, dynamic>> getRealtimeUpdates() {
     return communicationService.receiveUpdates();
   }
+
+  @override
+  Stream<List<WearAlert>> watchAlerts() {
+    return const Stream.empty();
+  }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotel_wear_app/presentation/providers/wear/wear_repository_provider.dart';
+import 'package:hotel_wear_app/presentation/providers/wear/wear_providers.dart';
 import 'wear_dashboard_screen.dart';
 import 'wear_alerts_screen.dart';
 import 'wear_history_screen.dart';
@@ -46,6 +47,34 @@ class _WearMainScreenState extends ConsumerState<WearMainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Escuchar nuevas alertas para navegar automáticamente
+    ref.listen(wearUnacknowledgedAlertsProvider, (previous, next) {
+      if (next.hasError) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error stream alertas: ${next.error}')),
+        );
+      }
+      
+      if (next.hasValue && next.value != null) {
+        final previousCount = previous?.value?.length ?? 0;
+        final currentCount = next.value!.length;
+        
+        if (currentCount > previousCount) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Nueva alerta recibida! Total: $currentCount')),
+          );
+          
+          if (_currentPage != 1) {
+            _pageController.animateToPage(
+              1,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        }
+      }
+    });
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
