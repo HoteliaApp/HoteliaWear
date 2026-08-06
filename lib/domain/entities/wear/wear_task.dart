@@ -19,6 +19,7 @@ enum WearTaskType {
   maintenance,
   inspection,
   delivery,
+  // ignore: constant_identifier_names
   guest_request;
 
   String get label => switch (this) {

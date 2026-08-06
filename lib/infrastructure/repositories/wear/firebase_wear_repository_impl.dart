@@ -10,6 +10,7 @@ class FirebaseWearRepositoryImpl implements WearRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   /// Stream de tareas activas desde Firestore
+  @override
   Stream<List<WearTask>> watchTasks() {
     return _firestore
         .collection('tasks')
@@ -64,7 +65,7 @@ class FirebaseWearRepositoryImpl implements WearRepository {
   @override
   Future<List<WearNotification>> getNotifications() async {
     try {
-      final snapshot = await _firestore.collection('notifications').get();
+      await _firestore.collection('notifications').get();
       return [];
     } catch (e) {
       return [];
@@ -92,7 +93,7 @@ class FirebaseWearRepositoryImpl implements WearRepository {
       await _firestore
           .collection('tasks')
           .doc(taskId)
-          .update({'status': WearTaskStatus.pending.name});
+          .update({'status': WearTaskStatus.inProgress.name});
     } catch (e) {
       rethrow;
     }

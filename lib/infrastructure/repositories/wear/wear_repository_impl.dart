@@ -86,6 +86,11 @@ class WearRepositoryImpl implements WearRepository {
   }
 
   @override
+  Stream<List<WearTask>> watchTasks() async* {
+    yield await datasource.getTasks();
+  }
+
+  @override
   Stream<Map<String, dynamic>> getRealtimeUpdates() {
     return communicationService.receiveUpdates();
   }

@@ -18,8 +18,8 @@ final wearUnreadNotificationsProvider = FutureProvider<List<WearNotification>>((
 final markNotificationAsReadProvider = FutureProvider.family<void, String>((ref, notificationId) async {
   final repository = ref.watch(wearRepositoryProvider);
   await repository.markNotificationAsRead(notificationId);
-  ref.refresh(wearNotificationsProvider);
-  ref.refresh(wearUnreadNotificationsProvider);
+  ref.invalidate(wearNotificationsProvider);
+  ref.invalidate(wearUnreadNotificationsProvider);
 });
 
 /// Provider para actualizaciones en tiempo real
