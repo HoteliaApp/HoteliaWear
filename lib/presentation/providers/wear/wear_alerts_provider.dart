@@ -12,7 +12,14 @@ final wearAlertsProvider = StreamProvider<List<WearAlert>>((ref) {
 final wearUnacknowledgedAlertsProvider = Provider<AsyncValue<List<WearAlert>>>((ref) {
   final alertsAsync = ref.watch(wearAlertsProvider);
   return alertsAsync.whenData(
-    (alerts) => alerts.where((a) => !a.isAcknowledged).toList(),
+    (alerts) {
+      final now = DateTime.now();
+      return alerts.where((a) {
+        if (a.isAcknowledged) return false;
+        final difference = now.difference(a.createdAt);
+        return difference.inHours < 4;
+      }).toList();
+    },
   );
 });
 
