@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hotel_wear_app/presentation/providers/wear/wear_repository_provider.dart';
 import 'package:hotel_wear_app/presentation/providers/wear/wear_providers.dart';
 import 'wear_dashboard_screen.dart';
 import 'wear_alerts_screen.dart';
 import 'wear_history_screen.dart';
+import 'pin_login_screen.dart';
 
 class WearMainScreen extends ConsumerStatefulWidget {
   const WearMainScreen({super.key});
@@ -17,6 +20,7 @@ class WearMainScreen extends ConsumerStatefulWidget {
 class _WearMainScreenState extends ConsumerState<WearMainScreen> {
   late PageController _pageController;
   int _currentPage = 0;
+  Stream<DocumentSnapshot>? _userStream;
 
   @override
   void initState() {
@@ -24,6 +28,34 @@ class _WearMainScreenState extends ConsumerState<WearMainScreen> {
     _pageController = PageController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(wearCommunicationServiceProvider).initialize();
+      _startSessionWatcher();
+    });
+  }
+
+  Future<void> _startSessionWatcher() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('linkedUserId');
+    if (userId == null) return;
+
+    _userStream = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .snapshots();
+
+    _userStream!.listen((snapshot) async {
+      if (!snapshot.exists) return;
+      final data = snapshot.data() as Map<String, dynamic>?;
+      // Si el documento existe pero el campo wearableLinkedAt fue borrado -> logout del movil
+      final hasLinkedAt = data != null && data.containsKey('wearableLinkedAt');
+      if (!hasLinkedAt) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('linkedUserId');
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const PinLoginScreen()),
+          );
+        }
+      }
     });
   }
 
@@ -47,7 +79,7 @@ class _WearMainScreenState extends ConsumerState<WearMainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Escuchar nuevas alertas para navegar automáticamente
+    // Escuchar nuevas alertas para navegar automaticamente
     ref.listen(wearUnacknowledgedAlertsProvider, (previous, next) {
       if (next.hasError) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -97,7 +129,7 @@ class _WearMainScreenState extends ConsumerState<WearMainScreen> {
                 WearHistoryScreen(),
               ],
             ),
-            // Indicador de página circular en la parte inferior
+            // Indicador de pagina circular en la parte inferior
             Positioned(
               bottom: 18,
               left: 0,

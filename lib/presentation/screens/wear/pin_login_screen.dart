@@ -102,37 +102,60 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: Colors.blueAccent))
           : Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
-                  'Ingresa tu PIN',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
+                const SizedBox(height: 16),
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.watch, color: Colors.blueAccent, size: 16),
+                    SizedBox(width: 6),
+                    Text(
+                      'HOTEL WEAR',
+                      style: TextStyle(
+                        color: Colors.blueAccent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 Text(
-                  _pin.padRight(4, '-'),
+                  _pin.padRight(4, '·'),
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 32,
-                    letterSpacing: 10,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 12,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 4),
                 Expanded(
                   child: GridView.count(
                     crossAxisCount: 3,
-                    childAspectRatio: 1.5,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    childAspectRatio: 1.4,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    mainAxisSpacing: 4,
+                    crossAxisSpacing: 4,
                     children: [
                       for (var i = 1; i <= 9; i++)
                         _buildKey(i.toString()),
                       _buildKey(''),
                       _buildKey('0'),
-                      IconButton(
-                        icon: const Icon(Icons.backspace, color: Colors.white),
-                        onPressed: _onBackspace,
+                      InkWell(
+                        onTap: _onBackspace,
+                        customBorder: const CircleBorder(),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.backspace, color: Colors.white70, size: 18),
+                        ),
                       ),
                     ],
                   ),
@@ -146,10 +169,21 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
     if (value.isEmpty) return const SizedBox();
     return InkWell(
       onTap: () => _onKeypadTap(value),
-      child: Center(
-        child: Text(
-          value,
-          style: const TextStyle(color: Colors.white, fontSize: 24),
+      customBorder: const CircleBorder(),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.15),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white, 
+              fontSize: 20, 
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ),
       ),
     );
