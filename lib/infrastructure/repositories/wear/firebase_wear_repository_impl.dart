@@ -65,9 +65,25 @@ class FirebaseWearRepositoryImpl implements WearRepository {
 
   @override
   Future<List<WearNotification>> getNotifications() async {
+    // Las alertas se guardan en 'alerts', no en 'notifications'.
+    // Mapeamos los documentos de 'alerts' a WearNotification para compatibilidad.
     try {
-      await _firestore.collection('notifications').get();
-      return [];
+      final snapshot = await _firestore
+          .collection('alerts')
+          .orderBy('createdAt', descending: true)
+          .limit(20)
+          .get();
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return WearNotification(
+          id: doc.id,
+          type: WearNotificationType.urgentAlert,
+          title: data['title'] as String? ?? data['message'] as String? ?? 'Alerta',
+          message: data['message'] as String? ?? '',
+          isRead: data['isAcknowledged'] as bool? ?? false,
+          timestamp: _parseDate(data['createdAt']),
+        );
+      }).toList();
     } catch (e) {
       return [];
     }
@@ -75,7 +91,38 @@ class FirebaseWearRepositoryImpl implements WearRepository {
 
   @override
   Future<List<WearNotification>> getUnreadNotifications() async {
-    return [];
+    try {
+      final snapshot = await _firestore
+          .collection('alerts')
+          .where('isAcknowledged', isEqualTo: false)
+          .orderBy('createdAt', descending: true)
+          .limit(10)
+          .get();
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return WearNotification(
+          id: doc.id,
+          type: WearNotificationType.urgentAlert,
+          title: data['title'] as String? ?? data['message'] as String? ?? 'Alerta',
+          message: data['message'] as String? ?? '',
+          isRead: false,
+          timestamp: _parseDate(data['createdAt']),
+        );
+      }).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Helper para parsear fechas desde Firestore (String ISO o Timestamp).
+  static DateTime _parseDate(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is String) return DateTime.tryParse(value) ?? DateTime.now();
+    try {
+      return (value as dynamic).toDate() as DateTime;
+    } catch (_) {
+      return DateTime.now();
+    }
   }
 
   @override
