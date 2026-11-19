@@ -44,18 +44,54 @@ final wearTaskByIdProvider =
   });
 });
 
-/// Provider para manejar aceptación de tarea
+/// Provider reactivo de tareas recibidas
+final wearReceivedTasksProvider = Provider<AsyncValue<List<WearTask>>>((ref) {
+  final tasksAsync = ref.watch(wearTasksProvider);
+  return tasksAsync.whenData(
+    (tasks) =>
+        tasks.where((t) => t.status == WearTaskStatus.received).toList(),
+  );
+});
+
+/// Provider reactivo de tareas activas (Pendientes, Recibidas, En camino)
+final wearActiveTasksProvider = Provider<AsyncValue<List<WearTask>>>((ref) {
+  final tasksAsync = ref.watch(wearTasksProvider);
+  return tasksAsync.whenData(
+    (tasks) => tasks
+        .where((t) =>
+            t.status == WearTaskStatus.pending ||
+            t.status == WearTaskStatus.received ||
+            t.status == WearTaskStatus.inProgress)
+        .toList(),
+  );
+});
+
+/// Provider para marcar tarea como recibida ("Recibido")
+final markWearTaskReceivedProvider =
+    FutureProvider.family<void, String>((ref, taskId) async {
+  final repository = ref.read(wearRepositoryProvider);
+  await repository.markTaskAsReceived(taskId);
+});
+
+/// Provider para marcar tarea como en camino ("En camino")
+final markWearTaskOnTheWayProvider =
+    FutureProvider.family<void, String>((ref, taskId) async {
+  final repository = ref.read(wearRepositoryProvider);
+  await repository.markTaskAsOnTheWay(taskId);
+});
+
+/// Provider para manejar aceptación de tarea (compatible)
 final acceptWearTaskProvider =
     FutureProvider.family<void, String>((ref, taskId) async {
   final repository = ref.read(wearRepositoryProvider);
-  await repository.acceptTask(taskId);
+  await repository.markTaskAsReceived(taskId);
 });
 
-/// Provider para iniciar tarea
+/// Provider para iniciar tarea (compatible)
 final startWearTaskProvider =
     FutureProvider.family<void, String>((ref, taskId) async {
   final repository = ref.read(wearRepositoryProvider);
-  await repository.startTask(taskId);
+  await repository.markTaskAsOnTheWay(taskId);
 });
 
 /// Provider para completar tarea
