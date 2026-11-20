@@ -16,6 +16,7 @@ class WearDashboardScreen extends ConsumerWidget {
     final pendingTasksAsync = ref.watch(wearPendingTasksProvider);
     final receivedTasksAsync = ref.watch(wearReceivedTasksProvider);
     final inProgressTasksAsync = ref.watch(wearInProgressTasksProvider);
+    final hasPendingSync = ref.watch(hasPendingSyncTasksProvider);
     final connectionStatus = ref
         .watch(wearCommunicationServiceProvider)
         .connectionStatus;
@@ -49,6 +50,23 @@ class WearDashboardScreen extends ConsumerWidget {
                       valueListenable: connectionStatus,
                       builder: (_, status, __) => Row(
                         children: [
+                          if (hasPendingSync) ...[
+                            const Icon(
+                              Icons.cloud_upload_outlined,
+                              size: 11,
+                              color: Colors.amber,
+                            ),
+                            const SizedBox(width: 3),
+                            const Text(
+                              'Sync',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: Colors.amber,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                          ],
                           Container(
                             width: 7,
                             height: 7,

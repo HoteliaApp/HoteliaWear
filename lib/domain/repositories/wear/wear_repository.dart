@@ -37,6 +37,9 @@ abstract class WearRepository {
   /// Inicia una tarea o la marca en estado "En camino"
   Future<void> startTask(String taskId);
 
+
+  /// Completa una tarea. Retorna true si quedó guardada localmente pendiente de sincronizar (offline).
+  Future<bool> completeTask(String taskId, {String? notes});
   /// Marca la tarea como "En camino"
   Future<void> markTaskAsOnTheWay(String taskId);
 

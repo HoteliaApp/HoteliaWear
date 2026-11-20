@@ -73,9 +73,10 @@ class WearRepositoryImpl implements WearRepository {
   }
 
   @override
-  Future<void> completeTask(String taskId, {String? notes}) async {
+  Future<bool> completeTask(String taskId, {String? notes}) async {
     await communicationService.completeTask(taskId: taskId, notes: notes);
     await datasource.updateTaskStatus(taskId, WearTaskStatus.completed);
+    return false;
   }
 
   @override

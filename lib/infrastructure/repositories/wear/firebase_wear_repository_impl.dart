@@ -10,11 +10,21 @@ import 'package:hotel_wear_app/infrastructure/models/wear/wear_alert_model.dart'
 class FirebaseWearRepositoryImpl implements WearRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  /// Stream de tareas activas desde Firestore con soporte offline en tiempo real
   /// Stream de tareas activas desde Firestore (filtrado por isActive == true)
   @override
   Stream<List<WearTask>> watchTasks() {
     return _firestore
         .collection('tasks')
+        .snapshots(includeMetadataChanges: true)
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return WearTaskModel.fromFirestore(
+          doc.data(),
+          id: doc.id,
+          isSyncPending: doc.metadata.hasPendingWrites,
+        ).toEntity();
+      }).toList();
         .where('isActive', isEqualTo: true)
         .snapshots()
         .map((snapshot) {
@@ -28,6 +38,13 @@ class FirebaseWearRepositoryImpl implements WearRepository {
   Future<List<WearTask>> getTasks() async {
     try {
       final snapshot = await _firestore.collection('tasks').get();
+      return snapshot.docs.map((doc) {
+        return WearTaskModel.fromFirestore(
+          doc.data(),
+          id: doc.id,
+          isSyncPending: doc.metadata.hasPendingWrites,
+        ).toEntity();
+      }).toList();
       return snapshot.docs
           .map((doc) => WearTaskModel.fromJson({'id': doc.id, ...doc.data()}).toEntity())
           .toList();
@@ -41,6 +58,11 @@ class FirebaseWearRepositoryImpl implements WearRepository {
     try {
       final doc = await _firestore.collection('tasks').doc(taskId).get();
       if (doc.exists) {
+        return WearTaskModel.fromFirestore(
+          doc.data()!,
+          id: doc.id,
+          isSyncPending: doc.metadata.hasPendingWrites,
+        ).toEntity();
         return WearTaskModel.fromJson({'id': doc.id, ...doc.data()!}).toEntity();
       }
       return null;
@@ -56,6 +78,13 @@ class FirebaseWearRepositoryImpl implements WearRepository {
           .collection('tasks')
           .where('status', isEqualTo: status.name)
           .get();
+      return snapshot.docs.map((doc) {
+        return WearTaskModel.fromFirestore(
+          doc.data(),
+          id: doc.id,
+          isSyncPending: doc.metadata.hasPendingWrites,
+        ).toEntity();
+      }).toList();
       return snapshot.docs
           .map((doc) => WearTaskModel.fromJson({'id': doc.id, ...doc.data()}).toEntity())
           .toList();
@@ -196,14 +225,26 @@ class FirebaseWearRepositoryImpl implements WearRepository {
   }
 
   @override
-  Future<void> completeTask(String taskId, {String? notes}) async {
+  Future<bool> completeTask(String taskId, {String? notes}) async {
     try {
+      final docRef = _firestore.collection('tasks').doc(taskId);
+      await docRef.update({
+        'status': WearTaskStatus.completed.name,
       await _firestore.collection('tasks').doc(taskId).update({
         'status': 'completed',
         'isActive': false,
         'completedAt': DateTime.now().toIso8601String(),
         if (notes != null) 'notes': notes,
       });
+
+      // Consultamos el estado de la caché local para detectar si quedó pendiente de sincronización
+      try {
+        final cacheSnapshot =
+            await docRef.get(const GetOptions(source: Source.cache));
+        return cacheSnapshot.metadata.hasPendingWrites;
+      } catch (_) {
+        return false;
+      }
     } catch (e) {
       rethrow;
     }

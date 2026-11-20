@@ -82,6 +82,25 @@ class WearHistoryItem extends StatelessWidget {
                   style: const TextStyle(fontSize: 9, color: Colors.white24),
                 ),
               ],
+              if (task.isSyncPending) ...[
+                const SizedBox(height: 2),
+                const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.cloud_upload_outlined,
+                        size: 9, color: Colors.amber),
+                    SizedBox(width: 2),
+                    Text(
+                      'Offline',
+                      style: TextStyle(
+                        fontSize: 8,
+                        color: Colors.amber,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ],
