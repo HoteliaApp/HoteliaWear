@@ -59,14 +59,14 @@ class WearTaskDetailScreen extends ConsumerWidget {
   }
 }
 
-class _DetailBody extends StatelessWidget {
+class _DetailBody extends ConsumerWidget {
   final WearTask task;
   const _DetailBody({required this.task});
 
   Color _priorityColor(int p) {
-    if (p >= 4) return const Color(0xFFF44336);
-    if (p == 3) return const Color(0xFFFF9800);
-    return const Color(0xFF4CAF50);
+    if (p >= 4) return const Color(0xFFFF5252);
+    if (p == 3) return const Color(0xFFFFB300);
+    return const Color(0xFF00E676);
   }
 
   IconData _taskIcon(WearTaskType type) => switch (type) {
@@ -78,7 +78,7 @@ class _DetailBody extends StatelessWidget {
       };
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return CustomScrollView(
       slivers: [
         // Header: icono + habitación + prioridad
@@ -101,7 +101,7 @@ class _DetailBody extends StatelessWidget {
                       'Habitación ${task.roomNumber}',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 13,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -184,22 +184,79 @@ class _DetailBody extends StatelessWidget {
 
         const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
+        // BOTONES DE ACCIÓN RÁPIDA
+        if (task.status == WearTaskStatus.pending) ...[
+          SliverToBoxAdapter(
+            child: SizedBox(
+              width: double.infinity,
+              height: 38,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2979FF),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  elevation: 0,
+                ),
+                icon: const Icon(Icons.check_circle_outline, size: 16),
+                label: const Text(
+                  'Recibido',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                onPressed: () {
+                  ref.read(markWearTaskReceivedProvider(task.id));
+                },
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 8)),
+        ],
+
+        if (task.status == WearTaskStatus.pending ||
+            task.status == WearTaskStatus.received) ...[
+          SliverToBoxAdapter(
+            child: SizedBox(
+              width: double.infinity,
+              height: 38,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF9100),
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  elevation: 0,
+                ),
+                icon: const Icon(Icons.directions_walk, size: 16),
+                label: const Text(
+                  'En camino',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                onPressed: () {
+                  ref.read(markWearTaskOnTheWayProvider(task.id));
+                },
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 8)),
+        ],
+
         // Botón Completar
         SliverToBoxAdapter(
           child: SizedBox(
             width: double.infinity,
-            height: 34,
+            height: 38,
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4CAF50),
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.zero,
+                backgroundColor: const Color(0xFF00E676),
+                foregroundColor: Colors.black,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
                 elevation: 0,
               ),
-              icon: const Icon(Icons.check_circle_outline, size: 15),
+              icon: const Icon(Icons.task_alt_rounded, size: 16),
               label: const Text(
                 'Completar',
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),

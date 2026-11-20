@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotel_wear_app/domain/entities/wear/wear_task.dart';
 import 'package:hotel_wear_app/presentation/providers/wear/wear_providers.dart';
+import 'package:hotel_wear_app/presentation/widgets/wear/wear_success_animation.dart';
 
 /// Pantalla de confirmación/completar tarea — optimizada para Wear OS Large Round.
 class WearConfirmationScreen extends ConsumerStatefulWidget {
@@ -45,6 +46,20 @@ class _WearConfirmationScreenState
         )).future,
       );
       if (mounted) _showSuccess(isPendingSync: isPendingSync);
+      await ref.read(completeWearTaskProvider(
+          (widget.task.id, _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim())).future);
+      if (mounted) {
+        await WearSuccessAnimation.show(
+          context,
+          roomNumber: widget.task.roomNumber,
+          title: '¡Tarea Completada!',
+        );
+        if (mounted) {
+          Navigator.pop(context); // cerrar confirmación
+        }
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

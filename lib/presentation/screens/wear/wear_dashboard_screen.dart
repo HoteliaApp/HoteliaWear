@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotel_wear_app/presentation/providers/wear/wear_providers.dart';
 import 'package:hotel_wear_app/presentation/widgets/wear/wear_task_card.dart';
+import 'package:hotel_wear_app/presentation/widgets/wear/wear_success_animation.dart';
 import 'package:hotel_wear_app/presentation/screens/wear/wear_task_detail_screen.dart';
 
 class WearDashboardScreen extends ConsumerWidget {
@@ -13,6 +14,7 @@ class WearDashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pendingTasksAsync = ref.watch(wearPendingTasksProvider);
+    final receivedTasksAsync = ref.watch(wearReceivedTasksProvider);
     final inProgressTasksAsync = ref.watch(wearInProgressTasksProvider);
     final hasPendingSync = ref.watch(hasPendingSyncTasksProvider);
     final connectionStatus = ref
@@ -20,7 +22,6 @@ class WearDashboardScreen extends ConsumerWidget {
         .connectionStatus;
 
     // Padding circular para Wear OS Large Round (450x450 dp)
-    // Los bordes curvos empiezan aprox a los 38px en cada lado
     const circularPadding = EdgeInsets.fromLTRB(28, 44, 28, 44);
 
     return Scaffold(
@@ -94,17 +95,17 @@ class WearDashboardScreen extends ConsumerWidget {
               ),
             ),
 
-            // Sección: En Progreso
+            // Sección: En Progreso / En camino
             const SliverToBoxAdapter(
               child: _SectionLabel(
-                label: 'En progreso',
-                icon: Icons.play_circle_outline,
+                label: 'En camino / Progreso',
+                icon: Icons.directions_walk,
               ),
             ),
             inProgressTasksAsync.when(
               data: (tasks) => tasks.isEmpty
                   ? const SliverToBoxAdapter(
-                      child: _EmptySlot(text: 'Sin tareas activas'),
+                      child: _EmptySlot(text: 'Sin tareas en camino'),
                     )
                   : SliverList(
                       delegate: SliverChildBuilderDelegate(
@@ -117,6 +118,17 @@ class WearDashboardScreen extends ConsumerWidget {
                                   WearTaskDetailScreen(taskId: tasks[i].id),
                             ),
                           ),
+                          onComplete: () async {
+                            await ref.read(
+                                completeWearTaskProvider((tasks[i].id, null)).future);
+                            if (ctx.mounted) {
+                              WearSuccessAnimation.show(
+                                ctx,
+                                roomNumber: tasks[i].roomNumber,
+                                title: '¡Completada!',
+                              );
+                            }
+                          },
                         ),
                         childCount: tasks.length,
                       ),
@@ -141,7 +153,59 @@ class WearDashboardScreen extends ConsumerWidget {
               ),
             ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 12)),
+            const SliverToBoxAdapter(child: SizedBox(height: 10)),
+
+            // Sección: Recibidas
+            const SliverToBoxAdapter(
+              child: _SectionLabel(
+                label: 'Recibidas',
+                icon: Icons.mark_email_read_outlined,
+              ),
+            ),
+            receivedTasksAsync.when(
+              data: (tasks) => tasks.isEmpty
+                  ? const SliverToBoxAdapter(
+                      child: _EmptySlot(text: 'Sin tareas recibidas'),
+                    )
+                  : SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (ctx, i) => WearTaskCard(
+                          task: tasks[i],
+                          onTap: () => Navigator.push(
+                            ctx,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  WearTaskDetailScreen(taskId: tasks[i].id),
+                            ),
+                          ),
+                          onOnTheWay: () {
+                            ref.read(markWearTaskOnTheWayProvider(tasks[i].id));
+                          },
+                        ),
+                        childCount: tasks.length,
+                      ),
+                    ),
+              loading: () => const SliverToBoxAdapter(
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                ),
+              ),
+              error: (e, _) => SliverToBoxAdapter(
+                child: Text(
+                  'Error',
+                  style: TextStyle(color: Colors.red[400], fontSize: 11),
+                ),
+              ),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 10)),
 
             // Sección: Pendientes
             const SliverToBoxAdapter(
@@ -166,8 +230,11 @@ class WearDashboardScreen extends ConsumerWidget {
                                   WearTaskDetailScreen(taskId: tasks[i].id),
                             ),
                           ),
-                          onAccept: () {
-                            ref.read(acceptWearTaskProvider(tasks[i].id));
+                          onReceived: () {
+                            ref.read(markWearTaskReceivedProvider(tasks[i].id));
+                          },
+                          onOnTheWay: () {
+                            ref.read(markWearTaskOnTheWayProvider(tasks[i].id));
                           },
                         ),
                         childCount: tasks.length,
@@ -200,6 +267,7 @@ class WearDashboardScreen extends ConsumerWidget {
       ),
     );
   }
+}
 }
 
 class _SectionLabel extends StatelessWidget {

@@ -13,6 +13,7 @@ class WearTaskModel {
   final String? assignedTo;
   final int priority;
   final bool isSyncPending;
+  final bool isActive;
 
   WearTaskModel({
     required this.id,
@@ -26,6 +27,7 @@ class WearTaskModel {
     this.assignedTo,
     this.priority = 3,
     this.isSyncPending = false,
+    this.isActive = true,
   });
 
   /// Convierte documento/JSON de Firestore a modelo preservando metadata de sincronización
@@ -56,20 +58,28 @@ class WearTaskModel {
   /// Convierte JSON del API a modelo
   factory WearTaskModel.fromJson(Map<String, dynamic> json) {
     return WearTaskModel(
-      id: json['id'] ?? '',
-      roomId: json['roomId'] ?? json['room_id'] ?? '',
-      roomNumber: json['roomNumber'] ?? json['room_number'] ?? 0,
-      taskType: json['taskType'] ?? json['task_type'] ?? 'cleaning',
-      status: json['status'] ?? 'pending',
-      description: json['description'] ?? '',
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : DateTime.now(),
-      completedAt: json['completedAt'] != null
-          ? DateTime.parse(json['completedAt'])
-          : null,
-      assignedTo: json['assignedTo'] ?? json['assigned_to'],
-      priority: json['priority'] ?? 3,
+      id: json['id']?.toString() ?? '',
+      roomId: json['roomId']?.toString() ?? json['room_id']?.toString() ?? '',
+      roomNumber: json['roomNumber'] is int
+          ? json['roomNumber'] as int
+          : int.tryParse(json['roomNumber']?.toString() ??
+                  json['room_number']?.toString() ??
+                  '0') ??
+              0,
+      taskType: json['taskType']?.toString() ??
+          json['task_type']?.toString() ??
+          'cleaning',
+      status: json['status']?.toString() ?? 'pending',
+      description: json['description']?.toString() ?? '',
+      createdAt: _parseDate(json['createdAt']),
+      completedAt: _parseNullableDate(json['completedAt']),
+      assignedTo: json['assignedTo']?.toString() ?? json['assigned_to']?.toString(),
+      priority: json['priority'] is int
+          ? json['priority'] as int
+          : int.tryParse(json['priority']?.toString() ?? '3') ?? 3,
+      isActive: json['isActive'] as bool? ??
+          json['is_active'] as bool? ??
+          true,
     );
   }
 
@@ -86,6 +96,7 @@ class WearTaskModel {
       'completedAt': completedAt?.toIso8601String(),
       'assignedTo': assignedTo,
       'priority': priority,
+      'isActive': isActive,
     };
   }
 
@@ -103,6 +114,7 @@ class WearTaskModel {
       assignedTo: assignedTo,
       priority: priority,
       isSyncPending: isSyncPending,
+      isActive: isActive,
     );
   }
 
@@ -114,9 +126,52 @@ class WearTaskModel {
   }
 
   static WearTaskStatus _parseTaskStatus(String status) {
-    return WearTaskStatus.values.firstWhere(
-      (e) => e.name == status,
-      orElse: () => WearTaskStatus.pending,
-    );
+    final clean = status.trim().toLowerCase();
+    switch (clean) {
+      case 'received':
+      case 'recibido':
+        return WearTaskStatus.received;
+      case 'inprogress':
+      case 'in_progress':
+      case 'encamino':
+      case 'en_camino':
+      case 'en camino':
+      case 'on_the_way':
+        return WearTaskStatus.inProgress;
+      case 'completed':
+      case 'completado':
+      case 'completada':
+      case 'terminado':
+      case 'terminada':
+        return WearTaskStatus.completed;
+      case 'cancelled':
+      case 'cancelado':
+      case 'cancelada':
+        return WearTaskStatus.cancelled;
+      case 'pending':
+      case 'pendiente':
+      default:
+        return WearTaskStatus.pending;
+    }
+  }
+
+  static DateTime _parseDate(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is String) return DateTime.tryParse(value) ?? DateTime.now();
+    try {
+      return (value as dynamic).toDate() as DateTime;
+    } catch (_) {
+      return DateTime.now();
+    }
+  }
+
+  static DateTime? _parseNullableDate(dynamic value) {
+    if (value == null) return null;
+    if (value is String) return DateTime.tryParse(value);
+    try {
+      return (value as dynamic).toDate() as DateTime;
+    } catch (_) {
+      return null;
+    }
   }
 }

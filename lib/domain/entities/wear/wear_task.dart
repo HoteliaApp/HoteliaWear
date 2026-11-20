@@ -1,13 +1,15 @@
 /// Estados posibles de una tarea en el wearable
 enum WearTaskStatus {
   pending,
+  received,
   inProgress,
   completed,
   cancelled;
 
   String get label => switch (this) {
         WearTaskStatus.pending => 'Pendiente',
-        WearTaskStatus.inProgress => 'En Progreso',
+        WearTaskStatus.received => 'Recibido',
+        WearTaskStatus.inProgress => 'En camino',
         WearTaskStatus.completed => 'Completada',
         WearTaskStatus.cancelled => 'Cancelada',
       };
@@ -44,6 +46,7 @@ class WearTask {
   final String? assignedTo;
   final int priority; // 1-5, donde 5 es máxima prioridad
   final bool isSyncPending; // Indica si la acción fue guardada localmente y está pendiente de sincronizar
+  final bool isActive;
 
   const WearTask({
     required this.id,
@@ -57,13 +60,17 @@ class WearTask {
     this.assignedTo,
     this.priority = 3,
     this.isSyncPending = false,
+    this.isActive = true,
   });
 
   /// Retorna true si la tarea está completada
   bool get isCompleted => status == WearTaskStatus.completed;
 
-  /// Retorna true si la tarea está en progreso
+  /// Retorna true si la tarea está en progreso o en camino
   bool get isInProgress => status == WearTaskStatus.inProgress;
+
+  /// Retorna true si la tarea ha sido recibida
+  bool get isReceived => status == WearTaskStatus.received;
 
   /// Calcula el tiempo transcurrido desde que se creó
   Duration get elapsedTime => DateTime.now().difference(createdAt);
@@ -81,6 +88,7 @@ class WearTask {
     String? assignedTo,
     int? priority,
     bool? isSyncPending,
+    bool? isActive,
   }) {
     return WearTask(
       id: id ?? this.id,
@@ -94,12 +102,13 @@ class WearTask {
       assignedTo: assignedTo ?? this.assignedTo,
       priority: priority ?? this.priority,
       isSyncPending: isSyncPending ?? this.isSyncPending,
+      isActive: isActive ?? this.isActive,
     );
   }
 
   @override
   String toString() =>
-      'WearTask(id: $id, room: $roomNumber, type: ${taskType.label}, status: ${status.label})';
+      'WearTask(id: $id, room: $roomNumber, type: ${taskType.label}, status: ${status.label}, active: $isActive)';
 
   @override
   bool operator ==(Object other) =>

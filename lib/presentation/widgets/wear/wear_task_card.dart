@@ -7,18 +7,25 @@ class WearTaskCard extends StatelessWidget {
   final WearTask task;
   final VoidCallback onTap;
   final VoidCallback? onAccept;
+  final VoidCallback? onReceived;
+  final VoidCallback? onOnTheWay;
+  final VoidCallback? onComplete;
 
   const WearTaskCard({
     super.key,
     required this.task,
     required this.onTap,
     this.onAccept,
+    this.onReceived,
+    this.onOnTheWay,
+    this.onComplete,
   });
 
   Color get _statusColor => switch (task.status) {
         WearTaskStatus.pending => const Color(0xFFFF9800),
-        WearTaskStatus.inProgress => const Color(0xFF2196F3),
-        WearTaskStatus.completed => const Color(0xFF4CAF50),
+        WearTaskStatus.received => const Color(0xFF2979FF),
+        WearTaskStatus.inProgress => const Color(0xFFFF9100),
+        WearTaskStatus.completed => const Color(0xFF00E676),
         WearTaskStatus.cancelled => const Color(0xFF757575),
       };
 
@@ -41,7 +48,7 @@ class WearTaskCard extends StatelessWidget {
           color: const Color(0xFF1A1A1A),
           borderRadius: BorderRadius.circular(10),
           border: Border(
-            left: BorderSide(color: _statusColor, width: 3),
+            left: BorderSide(color: _statusColor, width: 3.5),
           ),
         ),
         child: Column(
@@ -63,11 +70,18 @@ class WearTaskCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  width: 6,
-                  height: 6,
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _statusColor,
+                    color: _statusColor.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    task.status.label,
+                    style: TextStyle(
+                      fontSize: 8,
+                      color: _statusColor,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -77,27 +91,106 @@ class WearTaskCard extends StatelessWidget {
               task.description,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 10, color: Colors.white54),
+              style: const TextStyle(fontSize: 10, color: Colors.white70),
             ),
-            if (task.status == WearTaskStatus.pending && onAccept != null) ...[
+            // Botones de acción rápida en la tarjeta
+            if (task.status == WearTaskStatus.pending) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  if (onReceived != null || onAccept != null)
+                    Expanded(
+                      child: SizedBox(
+                        height: 28,
+                        child: ElevatedButton(
+                          onPressed: onReceived ?? onAccept,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2979FF),
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'Recibido',
+                            style: TextStyle(
+                                fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (onOnTheWay != null) ...[
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: SizedBox(
+                        height: 28,
+                        child: ElevatedButton(
+                          onPressed: onOnTheWay,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFF9100),
+                            foregroundColor: Colors.black,
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'En camino',
+                            style: TextStyle(
+                                fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ] else if (task.status == WearTaskStatus.received && onOnTheWay != null) ...[
               const SizedBox(height: 6),
               SizedBox(
                 width: double.infinity,
                 height: 28,
-                child: ElevatedButton(
-                  onPressed: onAccept,
+                child: ElevatedButton.icon(
+                  onPressed: onOnTheWay,
+                  icon: const Icon(Icons.directions_walk, size: 14),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4CAF50),
-                    foregroundColor: Colors.white,
+                    backgroundColor: const Color(0xFFFF9100),
+                    foregroundColor: Colors.black,
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(6),
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Aceptar',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                  label: const Text(
+                    'En camino',
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ] else if (task.status == WearTaskStatus.inProgress && onComplete != null) ...[
+              const SizedBox(height: 6),
+              SizedBox(
+                width: double.infinity,
+                height: 28,
+                child: ElevatedButton.icon(
+                  onPressed: onComplete,
+                  icon: const Icon(Icons.check_circle_outline, size: 14),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00E676),
+                    foregroundColor: Colors.black,
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    elevation: 0,
+                  ),
+                  label: const Text(
+                    'Completar',
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),

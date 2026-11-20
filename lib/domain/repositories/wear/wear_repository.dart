@@ -31,12 +31,20 @@ abstract class WearRepository {
   /// Acepta una tarea
   Future<void> acceptTask(String taskId);
 
-  /// Inicia una tarea
+  /// Marca la tarea como "Recibido" (confirmada por ama de llaves)
+  Future<void> markTaskAsReceived(String taskId);
+
+  /// Inicia una tarea o la marca en estado "En camino"
   Future<void> startTask(String taskId);
 
 
   /// Completa una tarea. Retorna true si quedó guardada localmente pendiente de sincronizar (offline).
   Future<bool> completeTask(String taskId, {String? notes});
+  /// Marca la tarea como "En camino"
+  Future<void> markTaskAsOnTheWay(String taskId);
+
+  /// Completa una tarea
+  Future<void> completeTask(String taskId, {String? notes});
 
   /// Cancela una tarea
   Future<void> cancelTask(String taskId);

@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hotel_wear_app/domain/entities/wear/wear_task.dart';
 import 'package:hotel_wear_app/presentation/providers/wear/wear_repository_provider.dart';
 import 'package:hotel_wear_app/presentation/providers/wear/wear_providers.dart';
+import 'package:hotel_wear_app/presentation/widgets/wear/wear_task_notification_dialog.dart';
 import 'wear_dashboard_screen.dart';
 import 'wear_alerts_screen.dart';
 import 'wear_history_screen.dart';
@@ -21,6 +23,8 @@ class _WearMainScreenState extends ConsumerState<WearMainScreen> {
   late PageController _pageController;
   int _currentPage = 0;
   Stream<DocumentSnapshot>? _userStream;
+  bool _initializedTasks = false;
+  final Set<String> _knownTaskIds = {};
 
   @override
   void initState() {
@@ -103,6 +107,51 @@ class _WearMainScreenState extends ConsumerState<WearMainScreen> {
               curve: Curves.easeOut,
             );
           }
+        }
+      }
+    });
+
+    // Escuchar stream /tasks filtrado por isActive == true para nuevas tareas
+    ref.listen(wearTasksProvider, (previous, next) {
+      if (!next.hasValue || next.value == null) return;
+      final currentTasks = next.value!;
+
+      // En la primera carga, registrar tareas conocidas
+      if (!_initializedTasks) {
+        _initializedTasks = true;
+        for (final t in currentTasks) {
+          _knownTaskIds.add(t.id);
+        }
+        // Si hay una tarea pendiente muy reciente al iniciar, notificar
+        final recentPending = currentTasks.where((t) =>
+            t.status == WearTaskStatus.pending &&
+            DateTime.now().difference(t.createdAt).inMinutes < 2).toList();
+        if (recentPending.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              WearTaskNotificationDialog.show(context, recentPending.first);
+            }
+          });
+        }
+        return;
+      }
+
+      // Detectar tareas recién creadas en Firestore
+      final newTasks = currentTasks
+          .where((t) => !_knownTaskIds.contains(t.id))
+          .toList();
+
+      for (final task in newTasks) {
+        _knownTaskIds.add(task.id);
+        // Si es una tarea de limpieza o en estado pendiente
+        if (task.taskType == WearTaskType.cleaning ||
+            task.status == WearTaskStatus.pending) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              WearTaskNotificationDialog.show(context, task);
+            }
+          });
+          break; // Mostrar una por una
         }
       }
     });
