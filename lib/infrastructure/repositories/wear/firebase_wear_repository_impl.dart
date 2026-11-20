@@ -10,15 +10,16 @@ import 'package:hotel_wear_app/infrastructure/models/wear/wear_alert_model.dart'
 class FirebaseWearRepositoryImpl implements WearRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Stream de tareas activas desde Firestore
+  /// Stream de tareas activas desde Firestore (filtrado por isActive == true)
   @override
   Stream<List<WearTask>> watchTasks() {
     return _firestore
         .collection('tasks')
+        .where('isActive', isEqualTo: true)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
-          .map((doc) => WearTaskModel.fromJson(doc.data()).toEntity())
+          .map((doc) => WearTaskModel.fromJson({'id': doc.id, ...doc.data()}).toEntity())
           .toList();
     });
   }
@@ -28,7 +29,7 @@ class FirebaseWearRepositoryImpl implements WearRepository {
     try {
       final snapshot = await _firestore.collection('tasks').get();
       return snapshot.docs
-          .map((doc) => WearTaskModel.fromJson(doc.data()).toEntity())
+          .map((doc) => WearTaskModel.fromJson({'id': doc.id, ...doc.data()}).toEntity())
           .toList();
     } catch (e) {
       return [];
@@ -40,7 +41,7 @@ class FirebaseWearRepositoryImpl implements WearRepository {
     try {
       final doc = await _firestore.collection('tasks').doc(taskId).get();
       if (doc.exists) {
-        return WearTaskModel.fromJson(doc.data()!).toEntity();
+        return WearTaskModel.fromJson({'id': doc.id, ...doc.data()!}).toEntity();
       }
       return null;
     } catch (e) {
@@ -56,7 +57,7 @@ class FirebaseWearRepositoryImpl implements WearRepository {
           .where('status', isEqualTo: status.name)
           .get();
       return snapshot.docs
-          .map((doc) => WearTaskModel.fromJson(doc.data()).toEntity())
+          .map((doc) => WearTaskModel.fromJson({'id': doc.id, ...doc.data()}).toEntity())
           .toList();
     } catch (e) {
       return [];
@@ -165,24 +166,30 @@ class FirebaseWearRepositoryImpl implements WearRepository {
   }
 
   @override
-  Future<void> acceptTask(String taskId) async {
+  Future<void> acceptTask(String taskId) => markTaskAsReceived(taskId);
+
+  @override
+  Future<void> markTaskAsReceived(String taskId) async {
     try {
-      await _firestore
-          .collection('tasks')
-          .doc(taskId)
-          .update({'status': WearTaskStatus.inProgress.name});
+      await _firestore.collection('tasks').doc(taskId).update({
+        'status': 'received',
+        'receivedAt': DateTime.now().toIso8601String(),
+      });
     } catch (e) {
       rethrow;
     }
   }
 
   @override
-  Future<void> startTask(String taskId) async {
+  Future<void> startTask(String taskId) => markTaskAsOnTheWay(taskId);
+
+  @override
+  Future<void> markTaskAsOnTheWay(String taskId) async {
     try {
-      await _firestore
-          .collection('tasks')
-          .doc(taskId)
-          .update({'status': WearTaskStatus.inProgress.name});
+      await _firestore.collection('tasks').doc(taskId).update({
+        'status': 'in_progress',
+        'startedAt': DateTime.now().toIso8601String(),
+      });
     } catch (e) {
       rethrow;
     }
@@ -192,7 +199,8 @@ class FirebaseWearRepositoryImpl implements WearRepository {
   Future<void> completeTask(String taskId, {String? notes}) async {
     try {
       await _firestore.collection('tasks').doc(taskId).update({
-        'status': WearTaskStatus.completed.name,
+        'status': 'completed',
+        'isActive': false,
         'completedAt': DateTime.now().toIso8601String(),
         if (notes != null) 'notes': notes,
       });

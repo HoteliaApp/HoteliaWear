@@ -52,13 +52,22 @@ class WearRepositoryImpl implements WearRepository {
 
   @override
   Future<void> acceptTask(String taskId) async {
+    await markTaskAsReceived(taskId);
+  }
+
+  @override
+  Future<void> markTaskAsReceived(String taskId) async {
     await communicationService.acceptTask(taskId);
-    // Actualizar estado local
-    await datasource.updateTaskStatus(taskId, WearTaskStatus.pending);
+    await datasource.updateTaskStatus(taskId, WearTaskStatus.received);
   }
 
   @override
   Future<void> startTask(String taskId) async {
+    await markTaskAsOnTheWay(taskId);
+  }
+
+  @override
+  Future<void> markTaskAsOnTheWay(String taskId) async {
     await communicationService.startTask(taskId);
     await datasource.updateTaskStatus(taskId, WearTaskStatus.inProgress);
   }
