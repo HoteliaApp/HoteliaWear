@@ -58,12 +58,21 @@ final startWearTaskProvider =
   await repository.startTask(taskId);
 });
 
-/// Provider para completar tarea
+/// Provider para completar tarea (retorna true si quedó guardada localmente pendiente de sincronizar)
 final completeWearTaskProvider =
-    FutureProvider.family<void, (String, String?)>((ref, params) async {
+    FutureProvider.family<bool, (String, String?)>((ref, params) async {
   final (taskId, notes) = params;
   final repository = ref.read(wearRepositoryProvider);
-  await repository.completeTask(taskId, notes: notes);
+  return await repository.completeTask(taskId, notes: notes);
+});
+
+/// Provider que indica si hay tareas con sincronización pendiente hacia Firestore
+final hasPendingSyncTasksProvider = Provider<bool>((ref) {
+  final tasksAsync = ref.watch(wearTasksProvider);
+  return tasksAsync.maybeWhen(
+    data: (tasks) => tasks.any((t) => t.isSyncPending),
+    orElse: () => false,
+  );
 });
 
 /// Provider para cancelar tarea

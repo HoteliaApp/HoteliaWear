@@ -43,6 +43,7 @@ class WearTask {
   final DateTime? completedAt;
   final String? assignedTo;
   final int priority; // 1-5, donde 5 es máxima prioridad
+  final bool isSyncPending; // Indica si la acción fue guardada localmente y está pendiente de sincronizar
 
   const WearTask({
     required this.id,
@@ -55,6 +56,7 @@ class WearTask {
     this.completedAt,
     this.assignedTo,
     this.priority = 3,
+    this.isSyncPending = false,
   });
 
   /// Retorna true si la tarea está completada
@@ -78,6 +80,7 @@ class WearTask {
     DateTime? completedAt,
     String? assignedTo,
     int? priority,
+    bool? isSyncPending,
   }) {
     return WearTask(
       id: id ?? this.id,
@@ -90,6 +93,7 @@ class WearTask {
       completedAt: completedAt ?? this.completedAt,
       assignedTo: assignedTo ?? this.assignedTo,
       priority: priority ?? this.priority,
+      isSyncPending: isSyncPending ?? this.isSyncPending,
     );
   }
 

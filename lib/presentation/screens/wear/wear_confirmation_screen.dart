@@ -36,11 +36,15 @@ class _WearConfirmationScreenState
   Future<void> _completeTask() async {
     setState(() => _isLoading = true);
     try {
-      ref.read(completeWearTaskProvider(
-          (widget.task.id, _notesController.text.trim().isEmpty
+      final isPendingSync = await ref.read(
+        completeWearTaskProvider((
+          widget.task.id,
+          _notesController.text.trim().isEmpty
               ? null
-              : _notesController.text.trim())));
-      if (mounted) _showSuccess();
+              : _notesController.text.trim(),
+        )).future,
+      );
+      if (mounted) _showSuccess(isPendingSync: isPendingSync);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -56,7 +60,7 @@ class _WearConfirmationScreenState
     }
   }
 
-  void _showSuccess() {
+  void _showSuccess({bool isPendingSync = false}) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -64,24 +68,40 @@ class _WearConfirmationScreenState
         backgroundColor: const Color(0xFF1A1A1A),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.check_circle, color: Colors.green, size: 40),
-              const SizedBox(height: 8),
-              const Text(
-                '¡Completada!',
-                style: TextStyle(
+              Icon(
+                isPendingSync ? Icons.cloud_done_outlined : Icons.check_circle,
+                color: isPendingSync ? Colors.amber : Colors.green,
+                size: 36,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                isPendingSync ? '¡Guardada localmente!' : '¡Completada!',
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontSize: 12,
                 ),
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 4),
+              Text(
+                isPendingSync
+                    ? 'Sin conexión a internet.\nSe sincronizará al conectar.'
+                    : 'Sincronizada con el sistema.',
+                style: const TextStyle(
+                  color: Colors.white60,
+                  fontSize: 10,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
-                height: 30,
+                height: 28,
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.pop(context); // cerrar dialog
@@ -89,7 +109,8 @@ class _WearConfirmationScreenState
                     Navigator.pop(context); // volver al dashboard
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    backgroundColor:
+                        isPendingSync ? Colors.amber[700] : Colors.green,
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),

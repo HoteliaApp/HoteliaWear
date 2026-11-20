@@ -12,6 +12,7 @@ class WearTaskModel {
   final DateTime? completedAt;
   final String? assignedTo;
   final int priority;
+  final bool isSyncPending;
 
   WearTaskModel({
     required this.id,
@@ -24,7 +25,33 @@ class WearTaskModel {
     this.completedAt,
     this.assignedTo,
     this.priority = 3,
+    this.isSyncPending = false,
   });
+
+  /// Convierte documento/JSON de Firestore a modelo preservando metadata de sincronización
+  factory WearTaskModel.fromFirestore(
+    Map<String, dynamic> json, {
+    String? id,
+    bool isSyncPending = false,
+  }) {
+    return WearTaskModel(
+      id: id ?? json['id'] ?? '',
+      roomId: json['roomId'] ?? json['room_id'] ?? '',
+      roomNumber: json['roomNumber'] ?? json['room_number'] ?? 0,
+      taskType: json['taskType'] ?? json['task_type'] ?? 'cleaning',
+      status: json['status'] ?? 'pending',
+      description: json['description'] ?? '',
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+      completedAt: json['completedAt'] != null
+          ? DateTime.parse(json['completedAt'])
+          : null,
+      assignedTo: json['assignedTo'] ?? json['assigned_to'],
+      priority: json['priority'] ?? 3,
+      isSyncPending: isSyncPending,
+    );
+  }
 
   /// Convierte JSON del API a modelo
   factory WearTaskModel.fromJson(Map<String, dynamic> json) {
@@ -75,6 +102,7 @@ class WearTaskModel {
       completedAt: completedAt,
       assignedTo: assignedTo,
       priority: priority,
+      isSyncPending: isSyncPending,
     );
   }
 
