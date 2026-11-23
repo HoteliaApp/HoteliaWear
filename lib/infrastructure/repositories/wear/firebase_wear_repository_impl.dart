@@ -24,6 +24,27 @@ class FirebaseWearRepositoryImpl implements WearRepository {
     });
   }
 
+  /// Stream de tareas del día actual para cálculo de estadísticas locales
+  @override
+  Stream<List<WearTask>> watchTodayTasks() {
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    return _firestore
+        .collection('tasks')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => WearTaskModel.fromJson({'id': doc.id, ...doc.data()}).toEntity())
+          .where((t) {
+            final isCreatedToday = t.createdAt.isAfter(startOfDay.subtract(const Duration(minutes: 5)));
+            final isCompletedToday = t.completedAt != null &&
+                t.completedAt!.isAfter(startOfDay.subtract(const Duration(minutes: 5)));
+            return isCreatedToday || isCompletedToday || t.isActive;
+          })
+          .toList();
+    });
+  }
+
   @override
   Future<List<WearTask>> getTasks() async {
     try {
