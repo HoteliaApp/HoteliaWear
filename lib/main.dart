@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
-import 'package:hotel_wear_app/presentation/screens/wear/wear_main_screen.dart';
 import 'package:hotel_wear_app/presentation/screens/wear/pin_login_screen.dart';
 
 void main() async {

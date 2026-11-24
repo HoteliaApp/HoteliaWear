@@ -1,9 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hotel_wear_app/config/services/wear_haptic_service.dart';
 import 'package:hotel_wear_app/domain/entities/wear/shift_metrics.dart';
 import 'package:hotel_wear_app/domain/entities/wear/wear_task.dart';
-import 'package:hotel_wear_app/presentation/screens/wear/wear_metrics_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -97,17 +95,23 @@ void main() {
   });
 
   group('[H-21] Feedback Háptico Distintivo', () {
-    test('WearHapticService ejecuta doble vibración pulsante sin errores (fallback seguro)', () async {
-      // Verifica que no lance excepciones aunque no esté corriendo en un dispositivo físico WearOS
-      await expectLater(
-        WearHapticService.playDoublePulseVibration(),
-        completes,
-      );
-    });
+    test(
+      'WearHapticService ejecuta doble vibración pulsante sin errores (fallback seguro)',
+      () async {
+        // Verifica que no lance excepciones aunque no esté corriendo en un dispositivo físico WearOS
+        await expectLater(
+          WearHapticService.playDoublePulseVibration(),
+          completes,
+        );
+      },
+    );
 
-    test('WearHapticService ejecuta vibración de éxito y click sin excepciones', () async {
-      await expectLater(WearHapticService.playSuccessVibration(), completes);
-      await expectLater(WearHapticService.playClickVibration(50), completes);
-    });
+    test(
+      'WearHapticService ejecuta vibración de éxito y click sin excepciones',
+      () async {
+        await expectLater(WearHapticService.playSuccessVibration(), completes);
+        await expectLater(WearHapticService.playClickVibration(50), completes);
+      },
+    );
   });
 }

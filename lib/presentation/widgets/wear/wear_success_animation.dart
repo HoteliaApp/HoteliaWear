@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -61,6 +62,7 @@ class _WearSuccessAnimationState extends State<WearSuccessAnimation>
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _ringAnimation;
+  Timer? _autoCloseTimer;
 
   @override
   void initState() {
@@ -87,7 +89,7 @@ class _WearSuccessAnimationState extends State<WearSuccessAnimation>
     _controller.forward();
 
     // Auto-cierre suave tras completar la animación
-    Future.delayed(const Duration(milliseconds: 1900), () {
+    _autoCloseTimer = Timer(const Duration(milliseconds: 1900), () {
       if (mounted) {
         Navigator.of(context, rootNavigator: true).pop();
       }
@@ -96,6 +98,7 @@ class _WearSuccessAnimationState extends State<WearSuccessAnimation>
 
   @override
   void dispose() {
+    _autoCloseTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }

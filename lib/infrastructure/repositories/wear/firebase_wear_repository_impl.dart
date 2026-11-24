@@ -10,8 +10,7 @@ import 'package:hotel_wear_app/infrastructure/models/wear/wear_alert_model.dart'
 class FirebaseWearRepositoryImpl implements WearRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Stream de tareas activas desde Firestore con soporte offline en tiempo real
-  /// Stream de tareas activas desde Firestore (filtrado por isActive == true)
+  /// Stream de tareas desde Firestore con soporte offline en tiempo real
   @override
   Stream<List<WearTask>> watchTasks() {
     return _firestore
@@ -25,12 +24,6 @@ class FirebaseWearRepositoryImpl implements WearRepository {
           isSyncPending: doc.metadata.hasPendingWrites,
         ).toEntity();
       }).toList();
-        .where('isActive', isEqualTo: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => WearTaskModel.fromJson({'id': doc.id, ...doc.data()}).toEntity())
-          .toList();
     });
   }
 
@@ -41,10 +34,14 @@ class FirebaseWearRepositoryImpl implements WearRepository {
     final startOfDay = DateTime(now.year, now.month, now.day);
     return _firestore
         .collection('tasks')
-        .snapshots()
+        .snapshots(includeMetadataChanges: true)
         .map((snapshot) {
       return snapshot.docs
-          .map((doc) => WearTaskModel.fromJson({'id': doc.id, ...doc.data()}).toEntity())
+          .map((doc) => WearTaskModel.fromFirestore(
+                doc.data(),
+                id: doc.id,
+                isSyncPending: doc.metadata.hasPendingWrites,
+              ).toEntity())
           .where((t) {
             final isCreatedToday = t.createdAt.isAfter(startOfDay.subtract(const Duration(minutes: 5)));
             final isCompletedToday = t.completedAt != null &&
@@ -66,9 +63,6 @@ class FirebaseWearRepositoryImpl implements WearRepository {
           isSyncPending: doc.metadata.hasPendingWrites,
         ).toEntity();
       }).toList();
-      return snapshot.docs
-          .map((doc) => WearTaskModel.fromJson({'id': doc.id, ...doc.data()}).toEntity())
-          .toList();
     } catch (e) {
       return [];
     }
@@ -84,7 +78,6 @@ class FirebaseWearRepositoryImpl implements WearRepository {
           id: doc.id,
           isSyncPending: doc.metadata.hasPendingWrites,
         ).toEntity();
-        return WearTaskModel.fromJson({'id': doc.id, ...doc.data()!}).toEntity();
       }
       return null;
     } catch (e) {
@@ -106,9 +99,6 @@ class FirebaseWearRepositoryImpl implements WearRepository {
           isSyncPending: doc.metadata.hasPendingWrites,
         ).toEntity();
       }).toList();
-      return snapshot.docs
-          .map((doc) => WearTaskModel.fromJson({'id': doc.id, ...doc.data()}).toEntity())
-          .toList();
     } catch (e) {
       return [];
     }
@@ -250,8 +240,6 @@ class FirebaseWearRepositoryImpl implements WearRepository {
     try {
       final docRef = _firestore.collection('tasks').doc(taskId);
       await docRef.update({
-        'status': WearTaskStatus.completed.name,
-      await _firestore.collection('tasks').doc(taskId).update({
         'status': 'completed',
         'isActive': false,
         'completedAt': DateTime.now().toIso8601String(),
