@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hotel_wear_app/config/theme/app_theme.dart';
 import 'package:hotel_wear_app/presentation/providers/wear/wear_providers.dart';
-import 'package:hotel_wear_app/presentation/widgets/wear/wear_task_card.dart';
-import 'package:hotel_wear_app/presentation/widgets/wear/wear_success_animation.dart';
 import 'package:hotel_wear_app/presentation/screens/wear/wear_task_detail_screen.dart';
+import 'package:hotel_wear_app/presentation/widgets/shared/app_ui.dart';
+import 'package:hotel_wear_app/presentation/widgets/wear/wear_success_animation.dart';
+import 'package:hotel_wear_app/presentation/widgets/wear/wear_task_card.dart';
 
 class WearDashboardScreen extends ConsumerWidget {
   static const String routeName = '/wear-dashboard';
@@ -17,89 +19,74 @@ class WearDashboardScreen extends ConsumerWidget {
     final receivedTasksAsync = ref.watch(wearReceivedTasksProvider);
     final inProgressTasksAsync = ref.watch(wearInProgressTasksProvider);
     final hasPendingSync = ref.watch(hasPendingSyncTasksProvider);
-    final connectionStatus = ref
-        .watch(wearCommunicationServiceProvider)
-        .connectionStatus;
-
-    // Padding circular para Wear OS Large Round (450x450 dp)
-    const circularPadding = EdgeInsets.fromLTRB(28, 44, 28, 44);
+    final connectionStatus =
+        ref.watch(wearCommunicationServiceProvider).connectionStatus;
+    final theme = Theme.of(context);
+    final statusColors = AppStatusColors.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.black,
       body: SafeArea(
-        minimum: circularPadding,
+        minimum: AppSpacing.circularScreen,
         child: CustomScrollView(
           slivers: [
-            // Header compacto con título y estado de conexión
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm + 2),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Panel',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
+                      style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
                       ),
                     ),
                     ValueListenableBuilder(
                       valueListenable: connectionStatus,
-                      builder: (_, status, __) => Row(
-                        children: [
-                          if (hasPendingSync) ...[
-                            const Icon(
-                              Icons.cloud_upload_outlined,
-                              size: 11,
-                              color: Colors.amber,
-                            ),
-                            const SizedBox(width: 3),
-                            const Text(
-                              'Sync',
-                              style: TextStyle(
-                                fontSize: 9,
-                                color: Colors.amber,
-                                fontWeight: FontWeight.bold,
+                      builder: (_, status, _) {
+                        final isOnline = status.name == 'connected';
+                        final connColor = isOnline
+                            ? statusColors.success
+                            : statusColors.danger;
+                        return Row(
+                          children: [
+                            if (hasPendingSync) ...[
+                              AppPill(
+                                label: 'Sync',
+                                color: statusColors.warning,
+                                icon: Icons.cloud_upload_rounded,
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                            ],
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: connColor,
                               ),
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: AppSpacing.xs),
+                            Text(
+                              isOnline ? 'Online' : 'Offline',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: connColor,
+                              ),
+                            ),
                           ],
-                          Container(
-                            width: 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: status.name == 'connected'
-                                  ? Colors.green
-                                  : Colors.red,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            status.name == 'connected' ? 'Online' : 'Offline',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: status.name == 'connected'
-                                  ? Colors.green
-                                  : Colors.red,
-                            ),
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
                   ],
                 ),
               ),
             ),
 
-            // Sección: En Progreso / En camino
+            // ── En camino / Progreso ──
             const SliverToBoxAdapter(
-              child: _SectionLabel(
-                label: 'En camino / Progreso',
-                icon: Icons.directions_walk,
+              child: AppSectionTitle(
+                title: 'En camino / Progreso',
+                icon: Icons.directions_walk_rounded,
               ),
             ),
             inProgressTasksAsync.when(
@@ -120,7 +107,9 @@ class WearDashboardScreen extends ConsumerWidget {
                           ),
                           onComplete: () async {
                             await ref.read(
-                                completeWearTaskProvider((tasks[i].id, null)).future);
+                              completeWearTaskProvider((tasks[i].id, null))
+                                  .future,
+                            );
                             if (ctx.mounted) {
                               WearSuccessAnimation.show(
                                 ctx,
@@ -133,33 +122,24 @@ class WearDashboardScreen extends ConsumerWidget {
                         childCount: tasks.length,
                       ),
                     ),
-              loading: () => const SliverToBoxAdapter(
-                child: Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                ),
-              ),
+              loading: () => const SliverToBoxAdapter(child: _MiniLoader()),
               error: (e, _) => SliverToBoxAdapter(
                 child: Text(
                   'Error',
-                  style: TextStyle(color: Colors.red[400], fontSize: 11),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: statusColors.danger,
+                  ),
                 ),
               ),
             ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 10)),
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm)),
 
-            // Sección: Recibidas
+            // ── Recibidas ──
             const SliverToBoxAdapter(
-              child: _SectionLabel(
-                label: 'Recibidas',
-                icon: Icons.mark_email_read_outlined,
+              child: AppSectionTitle(
+                title: 'Recibidas',
+                icon: Icons.mark_email_read_rounded,
               ),
             ),
             receivedTasksAsync.when(
@@ -185,33 +165,24 @@ class WearDashboardScreen extends ConsumerWidget {
                         childCount: tasks.length,
                       ),
                     ),
-              loading: () => const SliverToBoxAdapter(
-                child: Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                ),
-              ),
+              loading: () => const SliverToBoxAdapter(child: _MiniLoader()),
               error: (e, _) => SliverToBoxAdapter(
                 child: Text(
                   'Error',
-                  style: TextStyle(color: Colors.red[400], fontSize: 11),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: statusColors.danger,
+                  ),
                 ),
               ),
             ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 10)),
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm)),
 
-            // Sección: Pendientes
+            // ── Pendientes ──
             const SliverToBoxAdapter(
-              child: _SectionLabel(
-                label: 'Pendientes',
-                icon: Icons.pending_outlined,
+              child: AppSectionTitle(
+                title: 'Pendientes',
+                icon: Icons.pending_rounded,
               ),
             ),
             pendingTasksAsync.when(
@@ -240,28 +211,18 @@ class WearDashboardScreen extends ConsumerWidget {
                         childCount: tasks.length,
                       ),
                     ),
-              loading: () => const SliverToBoxAdapter(
-                child: Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                ),
-              ),
+              loading: () => const SliverToBoxAdapter(child: _MiniLoader()),
               error: (e, _) => SliverToBoxAdapter(
                 child: Text(
                   'Error',
-                  style: TextStyle(color: Colors.red[400], fontSize: 11),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: statusColors.danger,
+                  ),
                 ),
               ),
             ),
 
-            // Espacio final para el indicador de página
-            const SliverToBoxAdapter(child: SizedBox(height: 30)),
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
           ],
         ),
       ),
@@ -269,29 +230,19 @@ class WearDashboardScreen extends ConsumerWidget {
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  const _SectionLabel({required this.label, required this.icon});
+class _MiniLoader extends StatelessWidget {
+  const _MiniLoader();
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          Icon(icon, size: 12, color: Colors.white54),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white54,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.4,
-            ),
-          ),
-        ],
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        child: SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
       ),
     );
   }
@@ -303,11 +254,14 @@ class _EmptySlot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Text(
         text,
-        style: const TextStyle(color: Colors.white24, fontSize: 11),
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+        ),
       ),
     );
   }

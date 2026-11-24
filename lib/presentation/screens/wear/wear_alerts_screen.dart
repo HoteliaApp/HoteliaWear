@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hotel_wear_app/config/theme/app_theme.dart';
 import 'package:hotel_wear_app/presentation/providers/wear/wear_providers.dart';
+import 'package:hotel_wear_app/presentation/widgets/shared/app_ui.dart';
 import 'package:hotel_wear_app/presentation/widgets/wear/wear_alert_card.dart';
 
 class WearAlertsScreen extends ConsumerWidget {
@@ -11,97 +13,62 @@ class WearAlertsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final alertsAsync = ref.watch(wearAlertsProvider);
-
-    const circularPadding = EdgeInsets.fromLTRB(28, 44, 28, 44);
+    final theme = Theme.of(context);
+    final statusColors = AppStatusColors.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.black,
       body: SafeArea(
-        minimum: circularPadding,
+        minimum: AppSpacing.circularScreen,
         child: alertsAsync.when(
           data: (alerts) {
             if (alerts.isEmpty) {
-              return const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.check_circle, size: 36, color: Colors.green),
-                    SizedBox(height: 10),
-                    Text(
-                      'Sin alertas',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Todo bajo control',
-                      style: TextStyle(color: Colors.white38, fontSize: 10),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
+              return AppEmptyState(
+                icon: Icons.check_circle_rounded,
+                color: statusColors.success,
+                title: 'Sin alertas',
+                message: 'Todo bajo control',
               );
             }
 
-            final unacknowledged = alerts.where((a) => !a.isAcknowledged).toList();
+            final unacknowledged =
+                alerts.where((a) => !a.isAcknowledged).toList();
             final acknowledged = alerts.where((a) => a.isAcknowledged).toList();
 
             return CustomScrollView(
               slivers: [
-                // Header
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm + 2),
                     child: Row(
                       children: [
-                        const Icon(Icons.notifications_outlined,
-                            size: 13, color: Colors.white70),
-                        const SizedBox(width: 4),
-                        const Text(
+                        const Icon(
+                          Icons.notifications_rounded,
+                          size: AppIconSize.sm,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
                           'Alertas',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const Spacer(),
                         if (unacknowledged.isNotEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              '${unacknowledged.length}',
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold),
-                            ),
+                          AppPill(
+                            label: '${unacknowledged.length}',
+                            color: statusColors.danger,
+                            outlined: true,
                           ),
                       ],
                     ),
                   ),
                 ),
-
                 if (unacknowledged.isNotEmpty) ...[
                   SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 5),
-                      child: Text(
-                        'Por reconocer',
-                        style: TextStyle(
-                          color: Colors.orange[300],
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                    child: AppSectionTitle(
+                      title: 'Por reconocer',
+                      color: statusColors.warning,
                     ),
                   ),
                   SliverList(
@@ -110,25 +77,21 @@ class WearAlertsScreen extends ConsumerWidget {
                         alert: unacknowledged[i],
                         onAcknowledge: () {
                           ref.read(
-                              acknowledgeWearAlertProvider(unacknowledged[i].id));
+                            acknowledgeWearAlertProvider(unacknowledged[i].id),
+                          );
                         },
                       ),
                       childCount: unacknowledged.length,
                     ),
                   ),
                 ],
-
                 if (acknowledged.isNotEmpty) ...[
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.only(top: 8, bottom: 5),
-                      child: Text(
-                        'Reconocidas',
-                        style: TextStyle(
-                          color: Colors.green[300],
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      padding: const EdgeInsets.only(top: AppSpacing.sm),
+                      child: AppSectionTitle(
+                        title: 'Reconocidas',
+                        color: statusColors.success,
                       ),
                     ),
                   ),
@@ -142,8 +105,7 @@ class WearAlertsScreen extends ConsumerWidget {
                     ),
                   ),
                 ],
-
-                const SliverToBoxAdapter(child: SizedBox(height: 30)),
+                const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
               ],
             );
           },
@@ -155,8 +117,12 @@ class WearAlertsScreen extends ConsumerWidget {
             ),
           ),
           error: (e, _) => Center(
-            child: Text('Error',
-                style: TextStyle(color: Colors.red[400], fontSize: 11)),
+            child: Text(
+              'Error',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: statusColors.danger,
+              ),
+            ),
           ),
         ),
       ),

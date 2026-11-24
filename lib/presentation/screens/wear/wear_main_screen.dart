@@ -1,18 +1,19 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hotel_wear_app/config/services/wear_haptic_service.dart';
-import 'package:hotel_wear_app/domain/entities/wear/wear_task.dart';
+import 'package:hotel_wear_app/config/theme/app_theme.dart';
 import 'package:hotel_wear_app/domain/entities/wear/wear_alert.dart';
+import 'package:hotel_wear_app/domain/entities/wear/wear_task.dart';
 import 'package:hotel_wear_app/presentation/providers/wear/wear_providers.dart';
 import 'package:hotel_wear_app/presentation/widgets/wear/wear_task_notification_dialog.dart';
-import 'wear_dashboard_screen.dart';
-import 'wear_metrics_screen.dart';
-import 'wear_alerts_screen.dart';
-import 'wear_history_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'pin_login_screen.dart';
+import 'wear_alerts_screen.dart';
+import 'wear_dashboard_screen.dart';
+import 'wear_history_screen.dart';
+import 'wear_metrics_screen.dart';
 
 class WearMainScreen extends ConsumerStatefulWidget {
   const WearMainScreen({super.key});
@@ -51,7 +52,6 @@ class _WearMainScreenState extends ConsumerState<WearMainScreen> {
     _userStream!.listen((snapshot) async {
       if (!snapshot.exists) return;
       final data = snapshot.data() as Map<String, dynamic>?;
-      // Si el documento existe pero el campo wearableLinkedAt fue borrado -> logout del movil
       final hasLinkedAt = data != null && data.containsKey('wearableLinkedAt');
       if (!hasLinkedAt) {
         final prefs = await SharedPreferences.getInstance();
@@ -79,13 +79,14 @@ class _WearMainScreenState extends ConsumerState<WearMainScreen> {
       );
       return;
     }
-
     SystemNavigator.pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Escuchar nuevas alertas para activar vibración y navegar
+    final statusColors = AppStatusColors.of(context);
+    final cs = Theme.of(context).colorScheme;
+
     ref.listen(wearUnacknowledgedAlertsProvider, (previous, next) {
       if (next.hasError) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -99,12 +100,13 @@ class _WearMainScreenState extends ConsumerState<WearMainScreen> {
 
         if (currentCount > previousCount) {
           final unacknowledged = next.value!;
-          // Escenario 1 H-21: Alerta con severidad alta o solicitud de huésped
-          final isUrgentAlert = unacknowledged.any((a) =>
-              a.severity == AlertSeverity.high ||
-              a.severity == AlertSeverity.critical ||
-              a.message.toLowerCase().contains('huésped') ||
-              a.message.toLowerCase().contains('huesped'));
+          final isUrgentAlert = unacknowledged.any(
+            (a) =>
+                a.severity == AlertSeverity.high ||
+                a.severity == AlertSeverity.critical ||
+                a.message.toLowerCase().contains('huésped') ||
+                a.message.toLowerCase().contains('huesped'),
+          );
 
           if (isUrgentAlert) {
             WearHapticService.playDoublePulseVibration();
@@ -115,11 +117,10 @@ class _WearMainScreenState extends ConsumerState<WearMainScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Nueva alerta recibida! Total: $currentCount'),
-              backgroundColor: isUrgentAlert ? Colors.redAccent : null,
+              backgroundColor: isUrgentAlert ? statusColors.danger : null,
             ),
           );
 
-          // Navegar a la página de alertas (índice 2)
           if (_currentPage != 2) {
             _pageController.animateToPage(
               2,
@@ -131,21 +132,22 @@ class _WearMainScreenState extends ConsumerState<WearMainScreen> {
       }
     });
 
-    // Escuchar stream /tasks filtrado por isActive == true para nuevas tareas
     ref.listen(wearTasksProvider, (previous, next) {
       if (!next.hasValue || next.value == null) return;
       final currentTasks = next.value!;
 
-      // En la primera carga, registrar tareas conocidas
       if (!_initializedTasks) {
         _initializedTasks = true;
         for (final t in currentTasks) {
           _knownTaskIds.add(t.id);
         }
-        // Si hay una tarea pendiente muy reciente al iniciar, notificar
-        final recentPending = currentTasks.where((t) =>
-            t.status == WearTaskStatus.pending &&
-            DateTime.now().difference(t.createdAt).inMinutes < 2).toList();
+        final recentPending = currentTasks
+            .where(
+              (t) =>
+                  t.status == WearTaskStatus.pending &&
+                  DateTime.now().difference(t.createdAt).inMinutes < 2,
+            )
+            .toList();
         if (recentPending.isNotEmpty) {
           final task = recentPending.first;
           final isGuestRequest = task.taskType == WearTaskType.guest_request;
@@ -164,14 +166,11 @@ class _WearMainScreenState extends ConsumerState<WearMainScreen> {
         return;
       }
 
-      // Detectar tareas recién creadas en Firestore
-      final newTasks = currentTasks
-          .where((t) => !_knownTaskIds.contains(t.id))
-          .toList();
+      final newTasks =
+          currentTasks.where((t) => !_knownTaskIds.contains(t.id)).toList();
 
       for (final task in newTasks) {
         _knownTaskIds.add(task.id);
-        // Escenario 1 H-21: Si es solicitud de huésped o alta prioridad, doble vibración pulsante
         final isGuestRequest = task.taskType == WearTaskType.guest_request;
         final isHighPriority = task.priority >= 4;
 
@@ -181,7 +180,6 @@ class _WearMainScreenState extends ConsumerState<WearMainScreen> {
           HapticFeedback.vibrate();
         }
 
-        // Si es una tarea de limpieza o en estado pendiente
         if (task.taskType == WearTaskType.cleaning ||
             task.taskType == WearTaskType.guest_request ||
             task.status == WearTaskStatus.pending) {
@@ -190,7 +188,7 @@ class _WearMainScreenState extends ConsumerState<WearMainScreen> {
               WearTaskNotificationDialog.show(context, task);
             }
           });
-          break; // Mostrar una por una
+          break;
         }
       }
     });
@@ -198,14 +196,10 @@ class _WearMainScreenState extends ConsumerState<WearMainScreen> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop) {
-          return;
-        }
-
+        if (didPop) return;
         _goToPreviousPage();
       },
       child: Scaffold(
-        backgroundColor: Colors.black,
         body: Stack(
           children: [
             PageView(
@@ -218,7 +212,6 @@ class _WearMainScreenState extends ConsumerState<WearMainScreen> {
                 WearHistoryScreen(),
               ],
             ),
-            // Indicador de página circular en la parte inferior (4 vistas)
             Positioned(
               bottom: 18,
               left: 0,
@@ -226,16 +219,17 @@ class _WearMainScreenState extends ConsumerState<WearMainScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(4, (i) {
+                  final active = _currentPage == i;
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     margin: const EdgeInsets.symmetric(horizontal: 3),
-                    width: _currentPage == i ? 8 : 5,
-                    height: _currentPage == i ? 8 : 5,
+                    width: active ? 8 : 5,
+                    height: active ? 8 : 5,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: _currentPage == i
-                          ? Colors.white
-                          : Colors.white.withValues(alpha: 0.35),
+                      color: active
+                          ? AppColors.primary
+                          : cs.onSurface.withValues(alpha: 0.35),
                     ),
                   );
                 }),

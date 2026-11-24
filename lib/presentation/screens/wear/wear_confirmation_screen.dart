@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hotel_wear_app/config/theme/app_theme.dart';
 import 'package:hotel_wear_app/domain/entities/wear/wear_task.dart';
 import 'package:hotel_wear_app/presentation/providers/wear/wear_providers.dart';
+import 'package:hotel_wear_app/presentation/widgets/shared/app_ui.dart';
 import 'package:hotel_wear_app/presentation/widgets/wear/wear_success_animation.dart';
 
 /// Pantalla de confirmación/completar tarea — optimizada para Wear OS Large Round.
@@ -53,16 +55,15 @@ class _WearConfirmationScreenState
           title: '¡Tarea Completada!',
         );
         if (mounted) {
-          Navigator.pop(context); // cerrar confirmación
+          Navigator.pop(context);
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e',
-                style: const TextStyle(fontSize: 11)),
-            backgroundColor: Colors.red,
+            content: Text('Error: $e'),
+            backgroundColor: AppStatusColors.of(context).danger,
           ),
         );
       }
@@ -72,63 +73,63 @@ class _WearConfirmationScreenState
   }
 
   void _showSuccess({bool isPendingSync = false}) {
+    final theme = Theme.of(context);
+    final statusColors = AppStatusColors.of(context);
+    final color = isPendingSync ? statusColors.warning : statusColors.success;
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => Dialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md + 2,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                isPendingSync ? Icons.cloud_done_outlined : Icons.check_circle,
-                color: isPendingSync ? Colors.amber : Colors.green,
+                isPendingSync
+                    ? Icons.cloud_done_rounded
+                    : Icons.check_circle_rounded,
+                color: color,
                 size: 36,
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: AppSpacing.xs + 2),
               Text(
                 isPendingSync ? '¡Guardada localmente!' : '¡Completada!',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  fontSize: 12,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 isPendingSync
                     ? 'Sin conexión a internet.\nSe sincronizará al conectar.'
                     : 'Sincronizada con el sistema.',
-                style: const TextStyle(
-                  color: Colors.white60,
-                  fontSize: 10,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: AppSpacing.sm + 2),
               SizedBox(
                 width: double.infinity,
-                height: 28,
-                child: ElevatedButton(
+                height: 30,
+                child: FilledButton(
                   onPressed: () {
-                    Navigator.pop(context); // cerrar dialog
-                    Navigator.pop(context); // volver a detalle
-                    Navigator.pop(context); // volver al dashboard
+                    Navigator.pop(context);
+                    Navigator.pop(context);
+                    Navigator.pop(context);
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        isPendingSync ? Colors.amber[700] : Colors.green,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: color,
+                    foregroundColor: Colors.black,
                     padding: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                    elevation: 0,
                   ),
-                  child: const Text('Aceptar',
-                      style: TextStyle(fontSize: 11, color: Colors.white)),
+                  child: const Text('Aceptar'),
                 ),
               ),
             ],
@@ -140,54 +141,45 @@ class _WearConfirmationScreenState
 
   @override
   Widget build(BuildContext context) {
-    const circularPadding = EdgeInsets.fromLTRB(26, 42, 26, 36);
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final statusColors = AppStatusColors.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.black,
       body: SafeArea(
-        minimum: circularPadding,
+        minimum: const EdgeInsets.fromLTRB(26, 42, 26, 36),
         child: CustomScrollView(
           slivers: [
-            // Header con botón atrás
             SliverToBoxAdapter(
               child: Row(
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back_ios,
-                        size: 14, color: Colors.white54),
+                    child: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: AppIconSize.sm,
+                      color: cs.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(width: 5),
-                  const Text(
+                  Text(
                     'Confirmar tarea',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
+                    style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
             ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 10)),
-
-            // Resumen compacto
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm + 2)),
             SliverToBoxAdapter(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A),
-                  borderRadius: BorderRadius.circular(10),
-                ),
+              child: AppCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Hab. ${widget.task.roomNumber} · ${widget.task.taskType.label}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -195,8 +187,9 @@ class _WearConfirmationScreenState
                     const SizedBox(height: 3),
                     Text(
                       widget.task.description,
-                      style:
-                          const TextStyle(fontSize: 10, color: Colors.white54),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -206,16 +199,14 @@ class _WearConfirmationScreenState
                       children: [
                         Text(
                           '${widget.task.elapsedTime.inMinutes} min',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: Colors.white38,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: cs.onSurfaceVariant,
                           ),
                         ),
                         Text(
                           'Prioridad ${widget.task.priority}/5',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: Colors.white38,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: cs.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -224,68 +215,49 @@ class _WearConfirmationScreenState
                 ),
               ),
             ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 8)),
-
-            // Campo de notas compacto
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm)),
             SliverToBoxAdapter(
               child: TextField(
                 controller: _notesController,
                 maxLines: 2,
-                style: const TextStyle(color: Colors.white, fontSize: 11),
+                style: theme.textTheme.bodySmall,
                 decoration: InputDecoration(
                   hintText: 'Notas (opcional)...',
-                  hintStyle:
-                      const TextStyle(color: Colors.white24, fontSize: 11),
-                  filled: true,
-                  fillColor: const Color(0xFF1A1A1A),
+                  hintStyle: theme.textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                  ),
                   contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 8),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
+                    horizontal: AppSpacing.md - 2,
+                    vertical: AppSpacing.sm,
                   ),
                 ),
               ),
             ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 10)),
-
-            // Botones
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm + 2)),
             SliverToBoxAdapter(
               child: Row(
                 children: [
                   Expanded(
                     child: SizedBox(
-                      height: 30,
+                      height: 32,
                       child: OutlinedButton(
                         onPressed:
                             _isLoading ? null : () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.white24),
-                          padding: EdgeInsets.zero,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                        ),
-                        child: const Text('Cancelar',
-                            style: TextStyle(
-                                fontSize: 11, color: Colors.white54)),
+                        style: OutlinedButton.styleFrom(padding: EdgeInsets.zero),
+                        child: const Text('Cancelar'),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: SizedBox(
-                      height: 30,
-                      child: ElevatedButton(
+                      height: 32,
+                      child: FilledButton(
                         onPressed: _isLoading ? null : _completeTask,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: statusColors.success,
+                          foregroundColor: Colors.black,
                           padding: EdgeInsets.zero,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                          elevation: 0,
                         ),
                         child: _isLoading
                             ? const SizedBox(
@@ -293,21 +265,17 @@ class _WearConfirmationScreenState
                                 height: 14,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
+                                  color: Colors.black,
                                 ),
                               )
-                            : const Text('Completar',
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold)),
+                            : const Text('Completar'),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 30)),
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl + 6)),
           ],
         ),
       ),

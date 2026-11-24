@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hotel_wear_app/config/theme/app_theme.dart';
 import 'package:hotel_wear_app/domain/entities/wear/wear_task.dart';
 import 'package:hotel_wear_app/presentation/providers/wear/wear_providers.dart';
+import 'package:hotel_wear_app/presentation/widgets/shared/app_ui.dart';
 import 'package:hotel_wear_app/presentation/widgets/wear/wear_success_animation.dart';
 
 /// Diálogo modal a pantalla completa para notificar una nueva tarea en Wear OS.
-/// Optimizado para pantallas circulares con fuentes grandes, alto contraste
-/// y botones de acción rápida de gran tamaño ("Recibido", "En camino", "Completado").
 class WearTaskNotificationDialog extends ConsumerStatefulWidget {
   final WearTask task;
 
   const WearTaskNotificationDialog({super.key, required this.task});
 
-  /// Muestra el diálogo de notificación de tarea en el reloj
   static Future<void> show(BuildContext context, WearTask task) {
     HapticFeedback.vibrate();
     return showGeneralDialog(
@@ -53,10 +52,11 @@ class _WearTaskNotificationDialogState
     _currentTask = widget.task;
   }
 
-  Color _getPriorityColor(int priority) {
-    if (priority >= 4) return const Color(0xFFFF3D00); // Rojo brillante
-    if (priority == 3) return const Color(0xFFFFB300); // Ámbar brillante
-    return const Color(0xFF00E676); // Verde brillante
+  Color _getPriorityColor(BuildContext context, int priority) {
+    final s = AppStatusColors.of(context);
+    if (priority >= 4) return s.danger;
+    if (priority == 3) return s.warning;
+    return s.success;
   }
 
   String _getPriorityLabel(int priority) {
@@ -68,19 +68,21 @@ class _WearTaskNotificationDialogState
   Future<void> _handleAction(WearTaskStatus targetStatus) async {
     setState(() => _isLoading = true);
     HapticFeedback.mediumImpact();
+    final statusColors = AppStatusColors.of(context);
 
     try {
       if (targetStatus == WearTaskStatus.received) {
         await ref.read(markWearTaskReceivedProvider(_currentTask.id).future);
         if (mounted) {
           setState(() {
-            _currentTask = _currentTask.copyWith(status: WearTaskStatus.received);
+            _currentTask =
+                _currentTask.copyWith(status: WearTaskStatus.received);
           });
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Tarea marcada como Recibida', style: TextStyle(fontSize: 11)),
-              duration: Duration(seconds: 1),
-              backgroundColor: Color(0xFF1976D2),
+            SnackBar(
+              content: const Text('Tarea marcada como Recibida'),
+              duration: const Duration(seconds: 1),
+              backgroundColor: statusColors.info,
             ),
           );
         }
@@ -88,21 +90,22 @@ class _WearTaskNotificationDialogState
         await ref.read(markWearTaskOnTheWayProvider(_currentTask.id).future);
         if (mounted) {
           setState(() {
-            _currentTask = _currentTask.copyWith(status: WearTaskStatus.inProgress);
+            _currentTask =
+                _currentTask.copyWith(status: WearTaskStatus.inProgress);
           });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('En camino a la habitación', style: TextStyle(fontSize: 11)),
+              content: Text('En camino a la habitación'),
               duration: Duration(seconds: 1),
-              backgroundColor: Color(0xFFE65100),
+              backgroundColor: AppColors.primary,
             ),
           );
         }
       } else if (targetStatus == WearTaskStatus.completed) {
-        await ref.read(completeWearTaskProvider((_currentTask.id, null)).future);
+        await ref
+            .read(completeWearTaskProvider((_currentTask.id, null)).future);
         if (mounted) {
           Navigator.of(context, rootNavigator: true).pop();
-          // Muestra la animación de éxito requerida en Escenario 2
           await WearSuccessAnimation.show(
             context,
             roomNumber: _currentTask.roomNumber,
@@ -114,8 +117,8 @@ class _WearTaskNotificationDialogState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e', style: const TextStyle(fontSize: 10)),
-            backgroundColor: Colors.red,
+            content: Text('Error: $e'),
+            backgroundColor: statusColors.danger,
           ),
         );
       }
@@ -126,7 +129,10 @@ class _WearTaskNotificationDialogState
 
   @override
   Widget build(BuildContext context) {
-    // Escuchar cambios en la tarea si se actualiza desde otra parte
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final statusColors = AppStatusColors.of(context);
+
     final taskAsync = ref.watch(wearTaskByIdProvider(_currentTask.id));
     taskAsync.whenData((updated) {
       if (updated != null && updated.status != _currentTask.status && mounted) {
@@ -136,159 +142,74 @@ class _WearTaskNotificationDialogState
       }
     });
 
-    final priorityColor = _getPriorityColor(_currentTask.priority);
+    final priorityColor = _getPriorityColor(context, _currentTask.priority);
     final priorityLabel = _getPriorityLabel(_currentTask.priority);
 
-    // Padding optimizado para pantallas circulares Wear OS (450x450 / 390x390)
-    const circularPadding = EdgeInsets.fromLTRB(20, 24, 20, 22);
-
     return Scaffold(
-      backgroundColor: Colors.black,
       body: SafeArea(
-        minimum: circularPadding,
+        minimum: const EdgeInsets.fromLTRB(20, 24, 20, 22),
         child: _isLoading
-            ? const Center(
+            ? Center(
                 child: SizedBox(
                   width: 32,
                   height: 32,
                   child: CircularProgressIndicator(
                     strokeWidth: 3,
-                    color: Color(0xFF00E676),
+                    color: statusColors.success,
                   ),
                 ),
               )
             : CustomScrollView(
                 slivers: [
-                  // Header: Alerta de Nueva Tarea con alto contraste
                   SliverToBoxAdapter(
                     child: Column(
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFD32F2F).withValues(alpha: 0.25),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: const Color(0xFFFF5252),
-                                  width: 1.2,
-                                ),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.flash_on,
-                                      size: 11, color: Color(0xFFFF5252)),
-                                  SizedBox(width: 3),
-                                  Text(
-                                    'NUEVA TAREA',
-                                    style: TextStyle(
-                                      color: Color(0xFFFF5252),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 0.8,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            AppPill(
+                              label: 'NUEVA TAREA',
+                              color: statusColors.danger,
+                              icon: Icons.flash_on_rounded,
+                              outlined: true,
                             ),
                           ],
                         ),
-                        const SizedBox(height: 6),
-
-                        // Habitación con fuente extra grande
+                        const SizedBox(height: AppSpacing.xs + 2),
                         Text(
                           'Habitación ${_currentTask.roomNumber}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.2,
-                          ),
+                          style: theme.textTheme.headlineSmall,
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 4),
-
-                        // Chips de Prioridad y Tipo
+                        const SizedBox(height: AppSpacing.xs),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 7, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: priorityColor.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: priorityColor, width: 1),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.flag, size: 10, color: priorityColor),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    'P${_currentTask.priority} · $priorityLabel',
-                                    style: TextStyle(
-                                      color: priorityColor,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            AppPill(
+                              label: 'P${_currentTask.priority} · $priorityLabel',
+                              color: priorityColor,
+                              icon: Icons.flag_rounded,
+                              outlined: true,
                             ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 7, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.cleaning_services,
-                                      size: 10, color: Colors.white70),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    _currentTask.taskType.label,
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            const SizedBox(width: AppSpacing.xs + 2),
+                            AppPill(
+                              label: _currentTask.taskType.label,
+                              color: statusColors.neutral,
+                              icon: Icons.cleaning_services_rounded,
                             ),
                           ],
                         ),
                       ],
                     ),
                   ),
-
-                  const SliverToBoxAdapter(child: SizedBox(height: 8)),
-
-                  // Descripción concisa
+                  const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm)),
                   if (_currentTask.description.isNotEmpty)
                     SliverToBoxAdapter(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF161616),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.white12),
-                        ),
+                      child: AppCard(
                         child: Text(
                           _currentTask.description,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 10,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: cs.onSurfaceVariant,
                             height: 1.3,
                           ),
                           textAlign: TextAlign.center,
@@ -297,101 +218,82 @@ class _WearTaskNotificationDialogState
                         ),
                       ),
                     ),
-
-                  const SliverToBoxAdapter(child: SizedBox(height: 8)),
-
-                  // Estado actual indicador
+                  const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm)),
                   SliverToBoxAdapter(
                     child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          'Estado actual: ${_currentTask.status.label}',
-                          style: const TextStyle(
-                            color: Colors.white54,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                      child: AppPill(
+                        label: 'Estado actual: ${_currentTask.status.label}',
+                        color: statusColors.neutral,
                       ),
                     ),
                   ),
-
-                  const SliverToBoxAdapter(child: SizedBox(height: 10)),
-
-                  // BOTONES DE ACCIÓN RÁPIDA DE GRAN TAMAÑO
-                  // 1. "Recibido"
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: AppSpacing.sm + 2),
+                  ),
                   if (_currentTask.status == WearTaskStatus.pending) ...[
                     SliverToBoxAdapter(
                       child: _QuickActionButton(
                         label: 'Recibido',
-                        icon: Icons.check_circle_outline,
-                        color: const Color(0xFF2979FF),
-                        textColor: Colors.white,
-                        onPressed: () => _handleAction(WearTaskStatus.received),
+                        icon: Icons.check_circle_rounded,
+                        color: statusColors.info,
+                        textColor: Colors.black,
+                        onPressed: () =>
+                            _handleAction(WearTaskStatus.received),
                       ),
                     ),
                     const SliverToBoxAdapter(child: SizedBox(height: 7)),
                   ],
-
-                  // 2. "En camino"
                   if (_currentTask.status == WearTaskStatus.pending ||
                       _currentTask.status == WearTaskStatus.received) ...[
                     SliverToBoxAdapter(
                       child: _QuickActionButton(
                         label: 'En camino',
                         icon: Icons.directions_walk_rounded,
-                        color: const Color(0xFFFF9100),
-                        textColor: Colors.black,
-                        onPressed: () => _handleAction(WearTaskStatus.inProgress),
+                        color: AppColors.primary,
+                        textColor: Colors.white,
+                        onPressed: () =>
+                            _handleAction(WearTaskStatus.inProgress),
                       ),
                     ),
                     const SliverToBoxAdapter(child: SizedBox(height: 7)),
                   ],
-
-                  // 3. "Completado" (Terminado)
                   SliverToBoxAdapter(
                     child: _QuickActionButton(
                       label: 'Completado',
                       icon: Icons.task_alt_rounded,
-                      color: const Color(0xFF00E676),
+                      color: statusColors.success,
                       textColor: Colors.black,
                       height: 48,
                       onPressed: () => _handleAction(WearTaskStatus.completed),
                     ),
                   ),
-
-                  const SliverToBoxAdapter(child: SizedBox(height: 10)),
-
-                  // Botón Cerrar / Minimizar
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: AppSpacing.sm + 2),
+                  ),
                   SliverToBoxAdapter(
                     child: Center(
                       child: TextButton(
-                        onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+                        onPressed: () =>
+                            Navigator.of(context, rootNavigator: true).pop(),
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 4),
+                            horizontal: 14,
+                            vertical: 4,
+                          ),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                        child: const Text(
+                        child: Text(
                           'Ver más tarde',
-                          style: TextStyle(
-                            color: Colors.white38,
-                            fontSize: 10,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: cs.onSurfaceVariant,
                             decoration: TextDecoration.underline,
                           ),
                         ),
                       ),
                     ),
                   ),
-
-                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                  const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
                 ],
               ),
       ),
@@ -399,7 +301,6 @@ class _WearTaskNotificationDialogState
   }
 }
 
-/// Botón de acción rápida de gran tamaño para el wearable
 class _QuickActionButton extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -419,6 +320,7 @@ class _QuickActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return SizedBox(
       width: double.infinity,
       height: height,
@@ -426,25 +328,21 @@ class _QuickActionButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           foregroundColor: textColor,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
           elevation: 2,
         ),
         onPressed: onPressed,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 20, color: textColor),
-            const SizedBox(width: 8),
+            Icon(icon, size: AppIconSize.md, color: textColor),
+            const SizedBox(width: AppSpacing.sm),
             Text(
               label,
-              style: TextStyle(
+              style: theme.textTheme.labelLarge?.copyWith(
                 color: textColor,
-                fontSize: 13,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.3,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ],
@@ -453,4 +351,3 @@ class _QuickActionButton extends StatelessWidget {
     );
   }
 }
-
