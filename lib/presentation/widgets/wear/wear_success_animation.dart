@@ -1,10 +1,11 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hotel_wear_app/config/theme/app_theme.dart';
+import 'package:hotel_wear_app/presentation/widgets/shared/app_ui.dart';
 
 /// Diálogo con animación de éxito optimizado para Wear OS.
-/// Muestra un checkmark con rebote elástico, anillo de brillo pulsante
-/// y tipografía de alto contraste sobre fondo negro puro (AMOLED).
 class WearSuccessAnimation extends StatefulWidget {
   final int roomNumber;
   final String title;
@@ -17,7 +18,6 @@ class WearSuccessAnimation extends StatefulWidget {
     this.onDismissed,
   });
 
-  /// Muestra la animación de éxito a pantalla completa en Wear OS
   static Future<void> show(
     BuildContext context, {
     required int roomNumber,
@@ -88,7 +88,6 @@ class _WearSuccessAnimationState extends State<WearSuccessAnimation>
 
     _controller.forward();
 
-    // Auto-cierre suave tras completar la animación
     _autoCloseTimer = Timer(const Duration(milliseconds: 1900), () {
       if (mounted) {
         Navigator.of(context, rootNavigator: true).pop();
@@ -105,13 +104,16 @@ class _WearSuccessAnimationState extends State<WearSuccessAnimation>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final successColor = AppStatusColors.of(context).success;
+
     return GestureDetector(
       onTap: () => Navigator.of(context, rootNavigator: true).pop(),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: Center(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
@@ -122,38 +124,32 @@ class _WearSuccessAnimationState extends State<WearSuccessAnimation>
                     return Stack(
                       alignment: Alignment.center,
                       children: [
-                        // Anillo pulsante de onda verde
                         Opacity(
-                          opacity: (1.0 - (_controller.value * 0.7)).clamp(0.0, 1.0),
+                          opacity:
+                              (1.0 - (_controller.value * 0.7)).clamp(0.0, 1.0),
                           child: Container(
                             width: 86 * _ringAnimation.value,
                             height: 86 * _ringAnimation.value,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: const Color(0xFF00E676),
+                                color: successColor,
                                 width: 3,
                               ),
                             ),
                           ),
                         ),
-                        // Contenedor principal del check
                         ScaleTransition(
                           scale: _scaleAnimation,
                           child: Container(
                             width: 72,
                             height: 72,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  Color(0xFF00E676),
-                                  Color(0xFF00B248),
-                                ],
-                              ),
+                              color: successColor,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Color(0x6600E676),
+                                  color: successColor.withValues(alpha: 0.4),
                                   blurRadius: 16,
                                   spreadRadius: 2,
                                 ),
@@ -170,35 +166,19 @@ class _WearSuccessAnimationState extends State<WearSuccessAnimation>
                     );
                   },
                 ),
-                const SizedBox(height: 14),
-                // Título de éxito
+                const SizedBox(height: AppSpacing.md + 2),
                 Text(
                   widget.title,
-                  style: const TextStyle(
+                  style: theme.textTheme.titleLarge?.copyWith(
                     color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
+                    fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 4),
-                // Subtítulo con habitación
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'Habitación ${widget.roomNumber}',
-                    style: const TextStyle(
-                      color: Color(0xFF69F0AE),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                const SizedBox(height: AppSpacing.xs),
+                AppPill(
+                  label: 'Habitación ${widget.roomNumber}',
+                  color: successColor,
                 ),
               ],
             ),
@@ -208,4 +188,3 @@ class _WearSuccessAnimationState extends State<WearSuccessAnimation>
     );
   }
 }
-

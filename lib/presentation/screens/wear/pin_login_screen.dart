@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:hotel_wear_app/config/theme/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'wear_main_screen.dart';
 
@@ -33,9 +34,7 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
 
   void _onKeypadTap(String value) {
     if (_pin.length < 4) {
-      setState(() {
-        _pin += value;
-      });
+      setState(() => _pin += value);
       if (_pin.length == 4) {
         _verifyPin();
       }
@@ -44,9 +43,7 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
 
   void _onBackspace() {
     if (_pin.isNotEmpty) {
-      setState(() {
-        _pin = _pin.substring(0, _pin.length - 1);
-      });
+      setState(() => _pin = _pin.substring(0, _pin.length - 1));
     }
   }
 
@@ -63,8 +60,7 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
         final userId = snapshot.docs.first.id;
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('linkedUserId', userId);
-        
-        // Limpiar el pin
+
         await FirebaseFirestore.instance.collection('users').doc(userId).update({
           'wearablePin': FieldValue.delete(),
         });
@@ -77,11 +73,12 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('PIN Incorrecto')),
+            SnackBar(
+              content: const Text('PIN Incorrecto'),
+              backgroundColor: AppStatusColors.of(context).danger,
+            ),
           );
-          setState(() {
-            _pin = '';
-          });
+          setState(() => _pin = '');
         }
       }
     } catch (e) {
@@ -91,70 +88,78 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: Colors.black,
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.blueAccent))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(height: 16),
-                const Row(
+                const SizedBox(height: AppSpacing.lg),
+                Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.watch, color: Colors.blueAccent, size: 16),
-                    SizedBox(width: 6),
+                    const Icon(
+                      Icons.hotel_rounded,
+                      color: AppColors.primary,
+                      size: AppIconSize.sm,
+                    ),
+                    const SizedBox(width: AppSpacing.xs + 2),
                     Text(
-                      'HOTEL WEAR',
-                      style: TextStyle(
-                        color: Colors.blueAccent,
-                        fontSize: 12,
+                      'HOTELIA WEAR',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: AppColors.primary,
                         fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
+                        letterSpacing: 1.4,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Text(
                   _pin.padRight(4, '·'),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 12,
+                  style: theme.textTheme.displaySmall?.copyWith(
+                    color: cs.onSurface,
+                    letterSpacing: 10,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Expanded(
                   child: GridView.count(
                     crossAxisCount: 3,
                     childAspectRatio: 1.4,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    mainAxisSpacing: 4,
-                    crossAxisSpacing: 4,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                    ),
+                    mainAxisSpacing: AppSpacing.xs,
+                    crossAxisSpacing: AppSpacing.xs,
                     children: [
-                      for (var i = 1; i <= 9; i++)
-                        _buildKey(i.toString()),
+                      for (var i = 1; i <= 9; i++) _buildKey(i.toString()),
                       _buildKey(''),
                       _buildKey('0'),
                       InkWell(
                         onTap: _onBackspace,
                         customBorder: const CircleBorder(),
                         child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
+                          decoration: const BoxDecoration(
+                            color: AppColors.surfaceDark,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.backspace, color: Colors.white70, size: 18),
+                          child: Icon(
+                            Icons.backspace_rounded,
+                            color: cs.onSurfaceVariant,
+                            size: AppIconSize.md,
+                          ),
                         ),
                       ),
                     ],
@@ -167,20 +172,19 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
 
   Widget _buildKey(String value) {
     if (value.isEmpty) return const SizedBox();
+    final theme = Theme.of(context);
     return InkWell(
       onTap: () => _onKeypadTap(value),
       customBorder: const CircleBorder(),
       child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.15),
+        decoration: const BoxDecoration(
+          color: AppColors.cardDark,
           shape: BoxShape.circle,
         ),
         child: Center(
           child: Text(
             value,
-            style: const TextStyle(
-              color: Colors.white, 
-              fontSize: 20, 
+            style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w500,
             ),
           ),

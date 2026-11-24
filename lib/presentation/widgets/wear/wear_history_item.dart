@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:hotel_wear_app/config/theme/app_theme.dart';
 import 'package:hotel_wear_app/domain/entities/wear/wear_task.dart';
+import 'package:hotel_wear_app/presentation/widgets/shared/app_ui.dart';
 
 /// Item de historial compacto para Wear OS Large Round.
 class WearHistoryItem extends StatelessWidget {
@@ -7,11 +9,14 @@ class WearHistoryItem extends StatelessWidget {
 
   const WearHistoryItem({super.key, required this.task});
 
-  Color get _statusColor => switch (task.status) {
-        WearTaskStatus.completed => const Color(0xFF4CAF50),
-        WearTaskStatus.cancelled => const Color(0xFFF44336),
-        _ => const Color(0xFF757575),
-      };
+  Color _statusColor(BuildContext context) {
+    final s = AppStatusColors.of(context);
+    return switch (task.status) {
+      WearTaskStatus.completed => s.success,
+      WearTaskStatus.cancelled => s.danger,
+      _ => s.neutral,
+    };
+  }
 
   String get _durationLabel {
     if (task.completedAt == null) return '';
@@ -21,15 +26,17 @@ class WearHistoryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final statusColors = AppStatusColors.of(context);
+    final color = _statusColor(context);
+
+    return AppCard(
+      accent: color,
       margin: const EdgeInsets.only(bottom: 5),
-      decoration: BoxDecoration(
-        color: const Color(0xFF141414),
-        borderRadius: BorderRadius.circular(8),
-        border: Border(
-          left: BorderSide(color: _statusColor, width: 2),
-        ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md - 2,
+        vertical: AppSpacing.sm - 1,
       ),
       child: Row(
         children: [
@@ -39,66 +46,47 @@ class WearHistoryItem extends StatelessWidget {
               children: [
                 Text(
                   'Hab. ${task.roomNumber} · ${task.taskType.label}',
-                  style: const TextStyle(
-                    fontSize: 11,
+                  style: theme.textTheme.labelMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: AppSpacing.xxs),
                 Text(
                   task.description,
-                  style: const TextStyle(fontSize: 9, color: Colors.white38),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                decoration: BoxDecoration(
-                  color: _statusColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  task.status == WearTaskStatus.completed ? 'Hecho' : 'Cancel.',
-                  style: TextStyle(
-                    fontSize: 9,
-                    color: _statusColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+              AppPill(
+                label:
+                    task.status == WearTaskStatus.completed ? 'Hecho' : 'Cancel.',
+                color: color,
               ),
               if (_durationLabel.isNotEmpty) ...[
-                const SizedBox(height: 2),
+                const SizedBox(height: AppSpacing.xxs),
                 Text(
                   _durationLabel,
-                  style: const TextStyle(fontSize: 9, color: Colors.white24),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
                 ),
               ],
               if (task.isSyncPending) ...[
-                const SizedBox(height: 2),
-                const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.cloud_upload_outlined,
-                        size: 9, color: Colors.amber),
-                    SizedBox(width: 2),
-                    Text(
-                      'Offline',
-                      style: TextStyle(
-                        fontSize: 8,
-                        color: Colors.amber,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: AppSpacing.xxs),
+                AppPill(
+                  label: 'Offline',
+                  color: statusColors.warning,
+                  icon: Icons.cloud_upload_rounded,
                 ),
               ],
             ],

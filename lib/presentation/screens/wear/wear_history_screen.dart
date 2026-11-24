@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hotel_wear_app/presentation/providers/wear/wear_providers.dart';
-import 'package:hotel_wear_app/presentation/widgets/wear/wear_history_item.dart';
+import 'package:hotel_wear_app/config/theme/app_theme.dart';
 import 'package:hotel_wear_app/domain/entities/wear/wear_task.dart';
+import 'package:hotel_wear_app/presentation/providers/wear/wear_providers.dart';
+import 'package:hotel_wear_app/presentation/widgets/shared/app_ui.dart';
+import 'package:hotel_wear_app/presentation/widgets/wear/wear_history_item.dart';
 
 class WearHistoryScreen extends ConsumerWidget {
   static const String routeName = '/wear-history';
@@ -12,52 +14,32 @@ class WearHistoryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tasksAsync = ref.watch(wearTasksProvider);
-
-    const circularPadding = EdgeInsets.fromLTRB(28, 44, 28, 44);
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final statusColors = AppStatusColors.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.black,
       body: SafeArea(
-        minimum: circularPadding,
+        minimum: AppSpacing.circularScreen,
         child: tasksAsync.when(
           data: (tasks) {
-            final history =
-                tasks
-                    .where(
-                      (t) =>
-                          t.status == WearTaskStatus.completed ||
-                          t.status == WearTaskStatus.cancelled,
-                    )
-                    .toList()
-                  ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+            final history = tasks
+                .where(
+                  (t) =>
+                      t.status == WearTaskStatus.completed ||
+                      t.status == WearTaskStatus.cancelled,
+                )
+                .toList()
+              ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
             if (history.isEmpty) {
-              return const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.history, size: 36, color: Colors.white24),
-                    SizedBox(height: 10),
-                    Text(
-                      'Sin historial',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Las tareas completadas\naparecerán aquí',
-                      style: TextStyle(color: Colors.white38, fontSize: 10),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
+              return const AppEmptyState(
+                icon: Icons.history_rounded,
+                title: 'Sin historial',
+                message: 'Las tareas completadas\naparecerán aquí',
               );
             }
 
-            // Agrupar por fecha
             final grouped = <String, List<WearTask>>{};
             for (final task in history) {
               final dateKey =
@@ -67,49 +49,45 @@ class WearHistoryScreen extends ConsumerWidget {
 
             return CustomScrollView(
               slivers: [
-                // Header
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm + 2),
                     child: Row(
                       children: [
                         const Icon(
-                          Icons.history,
-                          size: 13,
-                          color: Colors.white70,
+                          Icons.history_rounded,
+                          size: AppIconSize.sm,
+                          color: AppColors.primary,
                         ),
-                        const SizedBox(width: 4),
-                        const Text(
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
                           'Historial',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const Spacer(),
                         Text(
                           '${history.length} tareas',
-                          style: const TextStyle(
-                            color: Colors.white38,
-                            fontSize: 10,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: cs.onSurfaceVariant,
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-
                 for (final entry in grouped.entries) ...[
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.only(bottom: 5, top: 4),
+                      padding: const EdgeInsets.only(
+                        bottom: AppSpacing.xs,
+                        top: AppSpacing.xs,
+                      ),
                       child: Text(
                         entry.key,
-                        style: const TextStyle(
-                          color: Colors.white38,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: cs.onSurfaceVariant,
                         ),
                       ),
                     ),
@@ -121,8 +99,7 @@ class WearHistoryScreen extends ConsumerWidget {
                     ),
                   ),
                 ],
-
-                const SliverToBoxAdapter(child: SizedBox(height: 30)),
+                const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
               ],
             );
           },
@@ -136,7 +113,9 @@ class WearHistoryScreen extends ConsumerWidget {
           error: (e, _) => Center(
             child: Text(
               'Error',
-              style: TextStyle(color: Colors.red[400], fontSize: 11),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: statusColors.danger,
+              ),
             ),
           ),
         ),
