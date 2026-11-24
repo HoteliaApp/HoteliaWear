@@ -37,21 +37,31 @@ class WearTaskModel {
     bool isSyncPending = false,
   }) {
     return WearTaskModel(
-      id: id ?? json['id'] ?? '',
-      roomId: json['roomId'] ?? json['room_id'] ?? '',
-      roomNumber: json['roomNumber'] ?? json['room_number'] ?? 0,
-      taskType: json['taskType'] ?? json['task_type'] ?? 'cleaning',
-      status: json['status'] ?? 'pending',
-      description: json['description'] ?? '',
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : DateTime.now(),
-      completedAt: json['completedAt'] != null
-          ? DateTime.parse(json['completedAt'])
-          : null,
-      assignedTo: json['assignedTo'] ?? json['assigned_to'],
-      priority: json['priority'] ?? 3,
+      id: id ?? json['id']?.toString() ?? '',
+      roomId: json['roomId']?.toString() ?? json['room_id']?.toString() ?? '',
+      roomNumber: json['roomNumber'] is int
+          ? json['roomNumber'] as int
+          : int.tryParse(
+                  json['roomNumber']?.toString() ??
+                      json['room_number']?.toString() ??
+                      '0',
+                ) ??
+                0,
+      taskType:
+          json['taskType']?.toString() ??
+          json['task_type']?.toString() ??
+          'cleaning',
+      status: json['status']?.toString() ?? 'pending',
+      description: json['description']?.toString() ?? '',
+      createdAt: _parseDate(json['createdAt']),
+      completedAt: _parseNullableDate(json['completedAt']),
+      assignedTo:
+          json['assignedTo']?.toString() ?? json['assigned_to']?.toString(),
+      priority: json['priority'] is int
+          ? json['priority'] as int
+          : int.tryParse(json['priority']?.toString() ?? '3') ?? 3,
       isSyncPending: isSyncPending,
+      isActive: json['isActive'] as bool? ?? json['is_active'] as bool? ?? true,
     );
   }
 
@@ -62,24 +72,26 @@ class WearTaskModel {
       roomId: json['roomId']?.toString() ?? json['room_id']?.toString() ?? '',
       roomNumber: json['roomNumber'] is int
           ? json['roomNumber'] as int
-          : int.tryParse(json['roomNumber']?.toString() ??
-                  json['room_number']?.toString() ??
-                  '0') ??
-              0,
-      taskType: json['taskType']?.toString() ??
+          : int.tryParse(
+                  json['roomNumber']?.toString() ??
+                      json['room_number']?.toString() ??
+                      '0',
+                ) ??
+                0,
+      taskType:
+          json['taskType']?.toString() ??
           json['task_type']?.toString() ??
           'cleaning',
       status: json['status']?.toString() ?? 'pending',
       description: json['description']?.toString() ?? '',
       createdAt: _parseDate(json['createdAt']),
       completedAt: _parseNullableDate(json['completedAt']),
-      assignedTo: json['assignedTo']?.toString() ?? json['assigned_to']?.toString(),
+      assignedTo:
+          json['assignedTo']?.toString() ?? json['assigned_to']?.toString(),
       priority: json['priority'] is int
           ? json['priority'] as int
           : int.tryParse(json['priority']?.toString() ?? '3') ?? 3,
-      isActive: json['isActive'] as bool? ??
-          json['is_active'] as bool? ??
-          true,
+      isActive: json['isActive'] as bool? ?? json['is_active'] as bool? ?? true,
     );
   }
 

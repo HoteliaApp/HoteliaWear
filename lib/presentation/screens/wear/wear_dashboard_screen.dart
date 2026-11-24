@@ -268,7 +268,6 @@ class WearDashboardScreen extends ConsumerWidget {
     );
   }
 }
-}
 
 class _SectionLabel extends StatelessWidget {
   final String label;

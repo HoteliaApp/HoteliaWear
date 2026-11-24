@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hotel_wear_app/config/services/wear_haptic_service.dart';
 import 'package:hotel_wear_app/domain/entities/wear/wear_task.dart';
 import 'package:hotel_wear_app/domain/entities/wear/wear_alert.dart';
-import 'package:hotel_wear_app/presentation/providers/wear/wear_repository_provider.dart';
 import 'package:hotel_wear_app/presentation/providers/wear/wear_providers.dart';
 import 'package:hotel_wear_app/presentation/widgets/wear/wear_task_notification_dialog.dart';
 import 'wear_dashboard_screen.dart';

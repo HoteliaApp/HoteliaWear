@@ -125,7 +125,7 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _pin.padRight(4, '·'),
+                  _pin.padRight(4, 'Â·'),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 28,

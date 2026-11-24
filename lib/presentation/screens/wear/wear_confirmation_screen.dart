@@ -37,20 +37,16 @@ class _WearConfirmationScreenState
   Future<void> _completeTask() async {
     setState(() => _isLoading = true);
     try {
+      final notes = _notesController.text.trim().isEmpty
+          ? null
+          : _notesController.text.trim();
       final isPendingSync = await ref.read(
-        completeWearTaskProvider((
-          widget.task.id,
-          _notesController.text.trim().isEmpty
-              ? null
-              : _notesController.text.trim(),
-        )).future,
+        completeWearTaskProvider((widget.task.id, notes)).future,
       );
-      if (mounted) _showSuccess(isPendingSync: isPendingSync);
-      await ref.read(completeWearTaskProvider(
-          (widget.task.id, _notesController.text.trim().isEmpty
-              ? null
-              : _notesController.text.trim())).future);
-      if (mounted) {
+      if (!mounted) return;
+      if (isPendingSync) {
+        _showSuccess(isPendingSync: true);
+      } else {
         await WearSuccessAnimation.show(
           context,
           roomNumber: widget.task.roomNumber,
